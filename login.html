@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finanças HL — Entrar</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="login-page">
+    <div class="login-card">
+        <h1 id="titulo-formulario">Finanças HL</h1>
+
+        <div class="alert" id="alerta-erro"><span>⚠️</span><span class="alert-text"></span></div>
+
+        <form id="form-login">
+            <div class="form-group">
+                <label for="login-email">E-mail</label>
+                <input type="email" id="login-email" required>
+            </div>
+            <div class="form-group">
+                <label for="login-senha">Senha</label>
+                <input type="password" id="login-senha" required minlength="6">
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%;">
+                <span class="btn-text">Entrar</span>
+                <span class="btn-loader">Entrando...</span>
+            </button>
+        </form>
+
+        <form id="form-cadastro" style="display:none;">
+            <div class="form-group">
+                <label for="cadastro-nome">Nome</label>
+                <input type="text" id="cadastro-nome" required>
+            </div>
+            <div class="form-group">
+                <label for="cadastro-email">E-mail</label>
+                <input type="email" id="cadastro-email" required>
+            </div>
+            <div class="form-group">
+                <label for="cadastro-senha">Senha</label>
+                <input type="password" id="cadastro-senha" required minlength="6">
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%;">
+                <span class="btn-text">Criar conta</span>
+                <span class="btn-loader">Criando...</span>
+            </button>
+        </form>
+
+        <p class="text-center" style="margin-top:1rem; font-size:0.85rem;">
+            <a href="#" id="link-alternar-modo">Ainda não tem conta? Cadastre-se</a>
+        </p>
+    </div>
+
+    <script type="module" src="js/auth.js"></script>
+</body>
+</html>
