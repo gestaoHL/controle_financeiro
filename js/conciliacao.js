@@ -112,8 +112,10 @@ export async function montarTela(container) {
 
     async function excluirContaBancaria(id) {
         if (!confirm('Excluir esta conta bancária? Os itens de extrato importados dela também serão excluídos.')) return;
+        const conta = contasBancarias.find(c => c.id === id);
         const { error } = await supabase.from('contas_bancarias').delete().eq('id', id);
         if (error) { mostrarToast('Erro ao excluir: ' + error.message, 'erro'); return; }
+        await registrarHistorico('Conciliação Bancária', 'EXCLUSÃO', `Conta bancária "${conta?.nome}" excluída (e seus itens de extrato)`);
         mostrarToast('Conta bancária excluída.', 'sucesso');
         await carregarContasBancarias();
         await carregarExtrato();
@@ -216,6 +218,7 @@ export async function montarTela(container) {
     async function desfazerConciliacao(itemId) {
         const { error } = await supabase.rpc('desfazer_conciliacao', { p_item_id: itemId });
         if (error) { mostrarToast('Erro ao desfazer: ' + error.message, 'erro'); return; }
+        await registrarHistorico('Conciliação Bancária', 'DESCONCILIAÇÃO', `Item de extrato #${itemId} desconciliado`);
         mostrarToast('Conciliação desfeita.', 'sucesso');
         await carregarExtrato();
     }
@@ -273,19 +276,24 @@ export async function montarTela(container) {
             }
             if (!itens.length) { mostrarToast('Nenhuma transação encontrada nesse arquivo.', 'erro'); return; }
 
-            const { data: existentes } = await supabase.from('extrato_itens')
-                .select('fitid').eq('conta_bancaria_id', contaId);
-            const fitidsExistentes = new Set((existentes ?? []).map(e => e.fitid));
-            const novos = itens.filter(it => !fitidsExistentes.has(it.fitid))
-                .map(it => ({ ...it, conta_bancaria_id: contaId, status: 'pendente' }));
-
-            if (!novos.length) { mostrarToast('Todas as transações desse arquivo já haviam sido importadas.', 'sucesso'); return; }
-
-            const { error } = await supabase.from('extrato_itens').insert(novos);
+            // upsert com ignoreDuplicates em vez de pré-buscar os fitids
+            // existentes e filtrar no cliente: evita um round-trip, não
+            // depende de o SELECT anterior ter trazido TODOS os itens já
+            // importados daquela conta (o limite padrão de linhas do
+            // PostgREST poderia esconder fitids antigos numa conta com
+            // extrato grande), e não falha o lote inteiro se algum item
+            // já existir — o unique (conta_bancaria_id, fitid) vira
+            // "ignora e segue" em vez de rejeitar o insert todo.
+            const candidatos = itens.map(it => ({ ...it, conta_bancaria_id: contaId, status: 'pendente' }));
+            const { data: inseridos, error } = await supabase.from('extrato_itens')
+                .upsert(candidatos, { onConflict: 'conta_bancaria_id,fitid', ignoreDuplicates: true })
+                .select();
             if (error) { mostrarToast('Erro ao importar: ' + error.message, 'erro'); return; }
 
-            await registrarHistorico('Conciliação Bancária', 'IMPORTAÇÃO', `${novos.length} transação(ões) importada(s) de ${arquivo.name}`);
-            mostrarToast(`${novos.length} transação(ões) importada(s).`, 'sucesso');
+            if (!inseridos.length) { mostrarToast('Todas as transações desse arquivo já haviam sido importadas.', 'sucesso'); return; }
+
+            await registrarHistorico('Conciliação Bancária', 'IMPORTAÇÃO', `${inseridos.length} transação(ões) importada(s) de ${arquivo.name}`);
+            mostrarToast(`${inseridos.length} transação(ões) importada(s).`, 'sucesso');
             container.querySelector('#modal-importar-ofx').classList.remove('show');
             e.target.reset();
             await carregarExtrato();
