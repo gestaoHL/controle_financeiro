@@ -1104,8 +1104,11 @@ export async function exigirSessao() {
 }
 
 export async function sair() {
-    await supabase.auth.signOut();
-    window.location.href = 'login.html';
+    try {
+        await supabase.auth.signOut();
+    } finally {
+        window.location.href = 'login.html';
+    }
 }
 
 async function buscarPerfil(usuarioId) {
