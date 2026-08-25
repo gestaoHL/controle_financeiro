@@ -48,6 +48,7 @@ js/config.js
   "name": "financas-hl",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Controle financeiro familiar — estático, Supabase como backend",
   "scripts": {
     "test": "node --test test/*.js"
@@ -116,7 +117,7 @@ git commit -m "chore: scaffold Finanças HL project"
 - Create: `supabase/schema.sql`
 
 **Interfaces:**
-- Produces: tables `perfis`, `plano_contas`, `contas`, `lancamentos`, `orcamento_valores`, `contas_bancarias`, `extrato_itens`, `historico_auditoria`; storage bucket `comprovantes`; trigger that auto-creates a `perfis` row on signup (first user → admin/aprovado, rest → membro/pendente).
+- Produces: tables `perfis`, `plano_contas`, `contas`, `lancamentos`, `orcamento_valores`, `contas_bancarias`, `extrato_itens`, `historico_auditoria`; storage bucket `comprovantes`; trigger that auto-creates a `perfis` row on signup (first user → admin/aprovado, rest → membro/pendente); RPC functions `conciliar_extrato(p_item_id bigint, p_lancamento_id bigint): void` and `desfazer_conciliacao(p_item_id bigint): void`, called via `supabase.rpc(...)` from Task 16 instead of raw table updates, since linking a lançamento to a shared bank account is a family-structural action that must not be blocked by the `lancamentos` UPDATE policy's dono-or-admin restriction (that restriction exists for editing a lançamento's own fields, not for reconciliation).
 
 - [ ] **Step 1: Write `supabase/schema.sql`**
 
@@ -237,6 +238,62 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
     after insert on auth.users
     for each row execute function public.criar_perfil_no_signup();
+
+-- ============================================================
+-- CONCILIAÇÃO BANCÁRIA — funções SECURITY DEFINER. Ligar/desligar um item
+-- de extrato a um lançamento grava em duas tabelas (extrato_itens e
+-- lancamentos), mas a policy de UPDATE de lancamentos só permite o dono
+-- ou um admin (ver mais abaixo) — conciliar o extrato de uma conta
+-- compartilhada, porém, é uma tarefa estrutural da família, não uma
+-- edição de lançamento de terceiro, então passa por aqui em vez de
+-- depender da policy de UPDATE de lancamentos.
+-- ============================================================
+create or replace function public.conciliar_extrato(p_item_id bigint, p_lancamento_id bigint)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    if not exists (select 1 from public.perfis where id = auth.uid() and status = 'aprovado') then
+        raise exception 'Usuário não aprovado.';
+    end if;
+
+    update public.extrato_itens
+    set status = 'conciliado', lancamento_id = p_lancamento_id
+    where id = p_item_id;
+
+    update public.lancamentos
+    set conta_bancaria_id = (select conta_bancaria_id from public.extrato_itens where id = p_item_id)
+    where id = p_lancamento_id;
+end;
+$$;
+
+create or replace function public.desfazer_conciliacao(p_item_id bigint)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_lancamento_id bigint;
+begin
+    if not exists (select 1 from public.perfis where id = auth.uid() and status = 'aprovado') then
+        raise exception 'Usuário não aprovado.';
+    end if;
+
+    select lancamento_id into v_lancamento_id from public.extrato_itens where id = p_item_id;
+
+    update public.extrato_itens set status = 'pendente', lancamento_id = null where id = p_item_id;
+
+    if v_lancamento_id is not null then
+        update public.lancamentos set conta_bancaria_id = null where id = v_lancamento_id;
+    end if;
+end;
+$$;
+
+grant execute on function public.conciliar_extrato(bigint, bigint) to authenticated;
+grant execute on function public.desfazer_conciliacao(bigint) to authenticated;
 
 -- ============================================================
 -- ROW LEVEL SECURITY
@@ -2252,7 +2309,7 @@ git commit -m "feat: add Prestação de Contas screen"
 - Create: `js/conciliacao.js`
 
 **Interfaces:**
-- Consumes: `supabase`, `mostrarToast`/`executarComBloqueio`, `registrarHistorico`, `formatarMoeda`/`formatarData`, `parseOFX`/`lerArquivoComoTexto` (`js/shared/ofxParser.js`). Implements `montarTela(container, contexto)`.
+- Consumes: `supabase`, `mostrarToast`/`executarComBloqueio`, `registrarHistorico`, `formatarMoeda`/`formatarData`, `parseOFX`/`lerArquivoComoTexto` (`js/shared/ofxParser.js`), and Task 2's `conciliar_extrato`/`desfazer_conciliacao` RPC functions (called via `supabase.rpc(...)`, not raw `.update()` calls on `lancamentos` — see Task 2's Interfaces note on why). Implements `montarTela(container, contexto)`.
 
 - [ ] **Step 1: Write `js/conciliacao.js`**
 
@@ -2455,12 +2512,17 @@ export async function montarTela(container) {
     }
 
     async function conciliarComLancamento(lancamentoId) {
-        const { error: erro1 } = await supabase.from('extrato_itens')
-            .update({ status: 'conciliado', lancamento_id: lancamentoId }).eq('id', itemConciliacaoAtual.id);
-        const { error: erro2 } = await supabase.from('lancamentos')
-            .update({ conta_bancaria_id: itemConciliacaoAtual.conta_bancaria_id }).eq('id', lancamentoId);
+        // RPC (Task 2), não update direto em duas tabelas: conciliar um
+        // lançamento de outro membro a uma conta bancária compartilhada é
+        // uma ação estrutural da família, e um update direto em
+        // `lancamentos` esbarraria na policy de dono-ou-admin daquela
+        // tabela (pensada para edição de campos, não para isto).
+        const { error } = await supabase.rpc('conciliar_extrato', {
+            p_item_id: itemConciliacaoAtual.id,
+            p_lancamento_id: lancamentoId
+        });
 
-        if (erro1 || erro2) { mostrarToast('Erro ao conciliar: ' + (erro1 || erro2).message, 'erro'); return; }
+        if (error) { mostrarToast('Erro ao conciliar: ' + error.message, 'erro'); return; }
         await registrarHistorico('Conciliação Bancária', 'CONCILIAÇÃO', `Item de extrato #${itemConciliacaoAtual.id} conciliado com lançamento #${lancamentoId}`);
         mostrarToast('Conciliado com sucesso.', 'sucesso');
         container.querySelector('#modal-conciliar').classList.remove('show');
@@ -2468,12 +2530,8 @@ export async function montarTela(container) {
     }
 
     async function desfazerConciliacao(itemId) {
-        const item = extratoItens.find(it => it.id === itemId);
-        const { error } = await supabase.from('extrato_itens').update({ status: 'pendente', lancamento_id: null }).eq('id', itemId);
+        const { error } = await supabase.rpc('desfazer_conciliacao', { p_item_id: itemId });
         if (error) { mostrarToast('Erro ao desfazer: ' + error.message, 'erro'); return; }
-        if (item.lancamento_id) {
-            await supabase.from('lancamentos').update({ conta_bancaria_id: null }).eq('id', item.lancamento_id);
-        }
         mostrarToast('Conciliação desfeita.', 'sucesso');
         await carregarExtrato();
     }
