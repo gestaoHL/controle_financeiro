@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { mostrarToast, executarComBloqueio } from './shared/toast.js';
 import { registrarHistorico } from './shared/auditoria.js';
+import { escapeHtml } from './shared/formato.js';
 
 export async function montarTela(container) {
     container.innerHTML = `
@@ -73,7 +74,7 @@ export async function montarTela(container) {
             const badge = plano?.tipo === 'RECEITA' ? 'badge-receita' : 'badge-despesa';
             return `<tr>
                 <td><span class="badge ${badge}">${tipo}</span></td>
-                <td>${conta.nome}</td>
+                <td>${escapeHtml(conta.nome)}</td>
                 <td>
                     <button class="btn-secondary" data-editar="${conta.id}">Editar</button>
                     <button class="btn-danger" data-excluir="${conta.id}">Excluir</button>

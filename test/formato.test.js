@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatarMoeda, formatarData, formatarDataHora } from '../js/shared/formato.js';
+import { formatarMoeda, formatarData, formatarDataHora, escapeHtml } from '../js/shared/formato.js';
 
 test('formatarMoeda formats BRL currency', () => {
     assert.equal(formatarMoeda(1234.5), 'R$ 1.234,50');
@@ -17,4 +17,17 @@ test('formatarDataHora formats an ISO timestamp as pt-BR date + time', () => {
 
 test('formatarDataHora returns em dash for empty input', () => {
     assert.equal(formatarDataHora(''), '—');
+});
+
+test('escapeHtml escapes all five HTML-significant characters', () => {
+    assert.equal(escapeHtml(`<img src=x onerror="alert('x')">&`), '&lt;img src=x onerror=&quot;alert(&#39;x&#39;)&quot;&gt;&amp;');
+});
+
+test('escapeHtml passes through a safe string unchanged', () => {
+    assert.equal(escapeHtml('Supermercado'), 'Supermercado');
+});
+
+test('escapeHtml treats null/undefined as an empty string', () => {
+    assert.equal(escapeHtml(null), '');
+    assert.equal(escapeHtml(undefined), '');
 });

@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { mostrarToast, executarComBloqueio } from './shared/toast.js';
 import { registrarHistorico } from './shared/auditoria.js';
-import { formatarMoeda } from './shared/formato.js';
+import { formatarMoeda, escapeHtml } from './shared/formato.js';
 
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
@@ -66,7 +66,7 @@ export async function montarTela(container) {
                     data-conta="${conta.id}" data-mes="${mes}" value="${valorDe(conta.id, mes)}"></td>`;
             }).join('');
             const total = MESES.reduce((soma, _, i) => soma + valorDe(conta.id, i + 1), 0);
-            return `<tr><td>${conta.nome}</td>${celulas}<td><strong data-total="${conta.id}">${formatarMoeda(total)}</strong></td></tr>`;
+            return `<tr><td>${escapeHtml(conta.nome)}</td>${celulas}<td><strong data-total="${conta.id}">${formatarMoeda(total)}</strong></td></tr>`;
         }).join('');
 
         tbody.querySelectorAll('input[data-conta]').forEach(input => {

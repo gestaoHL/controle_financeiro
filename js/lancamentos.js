@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { mostrarToast, executarComBloqueio } from './shared/toast.js';
 import { registrarHistorico } from './shared/auditoria.js';
-import { formatarMoeda, formatarData } from './shared/formato.js';
+import { formatarMoeda, formatarData, escapeHtml } from './shared/formato.js';
 
 const FORMAS_PAGAMENTO = { pix: 'Pix', transferencia: 'Transferência', cartao: 'Cartão', dinheiro: 'Dinheiro', boleto: 'Boleto' };
 
@@ -83,13 +83,13 @@ export async function montarTela(container, contexto) {
 
         const selectFiltro = container.querySelector('#filtro-conta');
         selectFiltro.innerHTML = '<option value="">Todas as contas</option>' +
-            contas.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+            contas.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
     }
 
     function popularSelectContaModal(tipo) {
         const select = container.querySelector('#lancamento-conta');
         const filtradas = contas.filter(c => c.plano_contas?.tipo === tipo);
-        select.innerHTML = filtradas.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+        select.innerHTML = filtradas.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
     }
 
     async function carregarLancamentos() {
@@ -120,15 +120,15 @@ export async function montarTela(container, contexto) {
                    <button class="btn-danger" data-excluir="${l.id}">Excluir</button>`
                 : '<span class="text-muted">—</span>';
             const comprovante = l.comprovante_url
-                ? `<button class="btn-secondary" data-ver-comprovante="${l.comprovante_url}">Ver</button>`
+                ? `<button class="btn-secondary" data-ver-comprovante="${escapeHtml(l.comprovante_url)}">Ver</button>`
                 : '<span class="text-muted">—</span>';
 
             return `<tr>
                 <td>${formatarData(l.data)}</td>
                 <td><span class="badge ${l.tipo === 'RECEITA' ? 'badge-receita' : 'badge-despesa'}">${l.tipo === 'RECEITA' ? 'Receita' : 'Despesa'}</span></td>
-                <td>${l.contas?.nome ?? '—'}</td>
-                <td>${l.historico}</td>
-                <td>${l.perfis?.nome ?? '—'}</td>
+                <td>${escapeHtml(l.contas?.nome ?? '—')}</td>
+                <td>${escapeHtml(l.historico)}</td>
+                <td>${escapeHtml(l.perfis?.nome ?? '—')}</td>
                 <td><strong>${formatarMoeda(l.valor)}</strong></td>
                 <td>${comprovante}</td>
                 <td>${acoes}</td>

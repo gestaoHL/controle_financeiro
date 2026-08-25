@@ -14,3 +14,9 @@ export function formatarDataHora(iso) {
     if (isNaN(data.getTime())) return '—';
     return `${data.toLocaleDateString('pt-BR')} ${data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
 }
+
+const ENTIDADES_HTML = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
+export function escapeHtml(valor) {
+    return String(valor ?? '').replace(/[&<>"']/g, c => ENTIDADES_HTML[c]);
+}
