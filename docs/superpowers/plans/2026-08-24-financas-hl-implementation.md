@@ -375,7 +375,10 @@ create policy "aprovados leem historico" on public.historico_auditoria for selec
 
 drop policy if exists "aprovados inserem no historico" on public.historico_auditoria;
 create policy "aprovados inserem no historico" on public.historico_auditoria for insert to authenticated
-    with check (exists (select 1 from public.perfis p where p.id = auth.uid() and p.status = 'aprovado'));
+    with check (
+        usuario_id = auth.uid()
+        and exists (select 1 from public.perfis p where p.id = auth.uid() and p.status = 'aprovado')
+    );
 
 grant select, insert, update, delete on public.perfis, public.plano_contas, public.contas,
     public.contas_bancarias, public.lancamentos, public.orcamento_valores, public.extrato_itens,
