@@ -1,0 +1,10 @@
+{
+  "name": "financas-hl",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Controle financeiro familiar — estático, Supabase como backend",
+  "scripts": {
+    "test": "node --test test/*.js"
+  }
+}
