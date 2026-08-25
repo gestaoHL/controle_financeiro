@@ -117,7 +117,7 @@ git commit -m "chore: scaffold Finanças HL project"
 - Create: `supabase/schema.sql`
 
 **Interfaces:**
-- Produces: tables `perfis`, `plano_contas`, `contas`, `lancamentos`, `orcamento_valores`, `contas_bancarias`, `extrato_itens`, `historico_auditoria`; storage bucket `comprovantes`; trigger that auto-creates a `perfis` row on signup (first user → admin/aprovado, rest → membro/pendente); RPC functions `conciliar_extrato(p_item_id bigint, p_lancamento_id bigint): void` and `desfazer_conciliacao(p_item_id bigint): void`, called via `supabase.rpc(...)` from Task 16 instead of raw table updates, since linking a lançamento to a shared bank account is a family-structural action that must not be blocked by the `lancamentos` UPDATE policy's dono-or-admin restriction (that restriction exists for editing a lançamento's own fields, not for reconciliation).
+- Produces: tables `perfis`, `plano_contas`, `contas`, `lancamentos`, `orcamento_valores`, `contas_bancarias`, `extrato_itens`, `historico_auditoria`; storage bucket `comprovantes`; trigger that auto-creates a `perfis` row on signup (first user → admin/aprovado, rest → membro/pendente); RPC functions `conciliar_extrato(p_item_id bigint, p_lancamento_id bigint): void` and `desfazer_conciliacao(p_item_id bigint): void`, called via `supabase.rpc(...)` from Task 16 instead of raw table updates, since linking a lançamento to a shared bank account is a family-structural action that must not be blocked by the `lancamentos` UPDATE policy's dono-or-admin restriction (that restriction exists for editing a lançamento's own fields, not for reconciliation); RLS helper functions `public.eh_aprovado(): boolean` and `public.eh_admin(): boolean`, both `security definer`, used inside every RLS policy in this file instead of an inline `exists (select 1 from public.perfis ...)` — a policy **on** `perfis` that subqueries `perfis` directly causes Postgres to raise `infinite recursion detected in policy for relation "perfis"` (the subquery re-enters RLS evaluation for the same table mid-evaluation); wrapping the check in a `security definer` function breaks the cycle because the function runs as its owner, which bypasses RLS internally. This was caught in the final whole-branch review, not any task-level review, because `schema.sql` had never been applied to a live project until then — every table's policy was retroactively switched to the helper functions for consistency, even ones that weren't recursion-affected themselves.
 
 - [ ] **Step 1: Write `supabase/schema.sql`**
 
@@ -307,14 +307,54 @@ alter table public.orcamento_valores enable row level security;
 alter table public.extrato_itens enable row level security;
 alter table public.historico_auditoria enable row level security;
 
--- perfis: usuário vê/edita o próprio; admin vê/edita todos.
+-- FUNÇÕES AUXILIARES DE RLS — security definer, então rodam com o
+-- privilégio do dono (não do usuário autenticado) e por isso NÃO
+-- reaplicam a RLS de perfis dentro delas. Isso é obrigatório aqui: uma
+-- policy em public.perfis que fizesse "exists (select 1 from
+-- public.perfis ...)" diretamente dispararia "infinite recursion
+-- detected in policy for relation perfis" no Postgres, porque a própria
+-- subquery reentra na policy que ainda está sendo avaliada. Encapsular a
+-- checagem numa função security definer quebra esse ciclo — e usamos as
+-- mesmas duas funções em toda política das outras tabelas também, por
+-- consistência (mesmo essas não sofrendo do bug de recursão, já que a
+-- tabela-alvo delas não é perfis).
+create or replace function public.eh_aprovado()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    select exists (select 1 from public.perfis where id = auth.uid() and status = 'aprovado');
+$$;
+
+create or replace function public.eh_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    select exists (select 1 from public.perfis where id = auth.uid() and papel = 'admin');
+$$;
+
+grant execute on function public.eh_aprovado() to authenticated;
+grant execute on function public.eh_admin() to authenticated;
+
+-- perfis: o próprio registro é sempre legível (mesmo pendente — exigirSessao()
+-- depende disso pra mostrar a tela de "aguardando aprovação"); qualquer
+-- aprovado lê todos os perfis (Transparência, Prestação de Contas e
+-- Histórico precisam mostrar o nome de outros membros, não só o do
+-- usuário logado). Só admin edita qualquer perfil (aprovar pendente,
+-- trocar papel).
 drop policy if exists "ve proprio ou admin ve todos" on public.perfis;
-create policy "ve proprio ou admin ve todos" on public.perfis for select to authenticated
-    using (id = auth.uid() or exists (select 1 from public.perfis p where p.id = auth.uid() and p.papel = 'admin'));
+drop policy if exists "perfis visiveis" on public.perfis;
+create policy "perfis visiveis" on public.perfis for select to authenticated
+    using (id = auth.uid() or public.eh_aprovado());
 
 drop policy if exists "admin edita qualquer perfil" on public.perfis;
 create policy "admin edita qualquer perfil" on public.perfis for update to authenticated
-    using (exists (select 1 from public.perfis p where p.id = auth.uid() and p.papel = 'admin'));
+    using (public.eh_admin());
 
 -- dado estrutural (plano_contas, contas, contas_bancarias, orcamento_valores):
 -- qualquer aprovado lê e escreve.
@@ -327,8 +367,8 @@ begin
         execute format('drop policy if exists "aprovados tem acesso total" on public.%I;', nome_tabela);
         execute format(
             'create policy "aprovados tem acesso total" on public.%I for all to authenticated
-             using (exists (select 1 from public.perfis p where p.id = auth.uid() and p.status = ''aprovado''))
-             with check (exists (select 1 from public.perfis p where p.id = auth.uid() and p.status = ''aprovado''));',
+             using (public.eh_aprovado())
+             with check (public.eh_aprovado());',
             nome_tabela
         );
     end loop;
@@ -339,46 +379,34 @@ end $$;
 -- update/delete só pelo dono ou por admin.
 drop policy if exists "aprovados leem todos os lancamentos" on public.lancamentos;
 create policy "aprovados leem todos os lancamentos" on public.lancamentos for select to authenticated
-    using (exists (select 1 from public.perfis p where p.id = auth.uid() and p.status = 'aprovado'));
+    using (public.eh_aprovado());
 
 drop policy if exists "aprovados inserem seu proprio lancamento" on public.lancamentos;
 create policy "aprovados inserem seu proprio lancamento" on public.lancamentos for insert to authenticated
-    with check (
-        usuario_id = auth.uid()
-        and exists (select 1 from public.perfis p where p.id = auth.uid() and p.status = 'aprovado')
-    );
+    with check (usuario_id = auth.uid() and public.eh_aprovado());
 
 drop policy if exists "dono ou admin edita lancamento" on public.lancamentos;
 create policy "dono ou admin edita lancamento" on public.lancamentos for update to authenticated
-    using (
-        usuario_id = auth.uid()
-        or exists (select 1 from public.perfis p where p.id = auth.uid() and p.papel = 'admin')
-    );
+    using (usuario_id = auth.uid() or public.eh_admin());
 
 drop policy if exists "dono ou admin exclui lancamento" on public.lancamentos;
 create policy "dono ou admin exclui lancamento" on public.lancamentos for delete to authenticated
-    using (
-        usuario_id = auth.uid()
-        or exists (select 1 from public.perfis p where p.id = auth.uid() and p.papel = 'admin')
-    );
+    using (usuario_id = auth.uid() or public.eh_admin());
 
 -- extrato_itens: mesmo padrão de dado estrutural (qualquer aprovado).
 drop policy if exists "aprovados tem acesso total" on public.extrato_itens;
 create policy "aprovados tem acesso total" on public.extrato_itens for all to authenticated
-    using (exists (select 1 from public.perfis p where p.id = auth.uid() and p.status = 'aprovado'))
-    with check (exists (select 1 from public.perfis p where p.id = auth.uid() and p.status = 'aprovado'));
+    using (public.eh_aprovado())
+    with check (public.eh_aprovado());
 
 -- historico_auditoria: aprovados leem e inserem (não editam/excluem — é log).
 drop policy if exists "aprovados leem historico" on public.historico_auditoria;
 create policy "aprovados leem historico" on public.historico_auditoria for select to authenticated
-    using (exists (select 1 from public.perfis p where p.id = auth.uid() and p.status = 'aprovado'));
+    using (public.eh_aprovado());
 
 drop policy if exists "aprovados inserem no historico" on public.historico_auditoria;
 create policy "aprovados inserem no historico" on public.historico_auditoria for insert to authenticated
-    with check (
-        usuario_id = auth.uid()
-        and exists (select 1 from public.perfis p where p.id = auth.uid() and p.status = 'aprovado')
-    );
+    with check (usuario_id = auth.uid() and public.eh_aprovado());
 
 grant select, insert, update, delete on public.perfis, public.plano_contas, public.contas,
     public.contas_bancarias, public.lancamentos, public.orcamento_valores, public.extrato_itens,
@@ -2454,8 +2482,10 @@ export async function montarTela(container) {
 
     async function excluirContaBancaria(id) {
         if (!confirm('Excluir esta conta bancária? Os itens de extrato importados dela também serão excluídos.')) return;
+        const conta = contasBancarias.find(c => c.id === id);
         const { error } = await supabase.from('contas_bancarias').delete().eq('id', id);
         if (error) { mostrarToast('Erro ao excluir: ' + error.message, 'erro'); return; }
+        await registrarHistorico('Conciliação Bancária', 'EXCLUSÃO', `Conta bancária "${conta?.nome}" excluída (e seus itens de extrato)`);
         mostrarToast('Conta bancária excluída.', 'sucesso');
         await carregarContasBancarias();
         await carregarExtrato();
@@ -2558,6 +2588,7 @@ export async function montarTela(container) {
     async function desfazerConciliacao(itemId) {
         const { error } = await supabase.rpc('desfazer_conciliacao', { p_item_id: itemId });
         if (error) { mostrarToast('Erro ao desfazer: ' + error.message, 'erro'); return; }
+        await registrarHistorico('Conciliação Bancária', 'DESCONCILIAÇÃO', `Item de extrato #${itemId} desconciliado`);
         mostrarToast('Conciliação desfeita.', 'sucesso');
         await carregarExtrato();
     }
@@ -2615,19 +2646,24 @@ export async function montarTela(container) {
             }
             if (!itens.length) { mostrarToast('Nenhuma transação encontrada nesse arquivo.', 'erro'); return; }
 
-            const { data: existentes } = await supabase.from('extrato_itens')
-                .select('fitid').eq('conta_bancaria_id', contaId);
-            const fitidsExistentes = new Set((existentes ?? []).map(e => e.fitid));
-            const novos = itens.filter(it => !fitidsExistentes.has(it.fitid))
-                .map(it => ({ ...it, conta_bancaria_id: contaId, status: 'pendente' }));
-
-            if (!novos.length) { mostrarToast('Todas as transações desse arquivo já haviam sido importadas.', 'sucesso'); return; }
-
-            const { error } = await supabase.from('extrato_itens').insert(novos);
+            // upsert com ignoreDuplicates em vez de pré-buscar os fitids
+            // existentes e filtrar no cliente: evita um round-trip, não
+            // depende de o SELECT anterior ter trazido TODOS os itens já
+            // importados daquela conta (o limite padrão de linhas do
+            // PostgREST poderia esconder fitids antigos numa conta com
+            // extrato grande), e não falha o lote inteiro se algum item
+            // já existir — o unique (conta_bancaria_id, fitid) vira
+            // "ignora e segue" em vez de rejeitar o insert todo.
+            const candidatos = itens.map(it => ({ ...it, conta_bancaria_id: contaId, status: 'pendente' }));
+            const { data: inseridos, error } = await supabase.from('extrato_itens')
+                .upsert(candidatos, { onConflict: 'conta_bancaria_id,fitid', ignoreDuplicates: true })
+                .select();
             if (error) { mostrarToast('Erro ao importar: ' + error.message, 'erro'); return; }
 
-            await registrarHistorico('Conciliação Bancária', 'IMPORTAÇÃO', `${novos.length} transação(ões) importada(s) de ${arquivo.name}`);
-            mostrarToast(`${novos.length} transação(ões) importada(s).`, 'sucesso');
+            if (!inseridos.length) { mostrarToast('Todas as transações desse arquivo já haviam sido importadas.', 'sucesso'); return; }
+
+            await registrarHistorico('Conciliação Bancária', 'IMPORTAÇÃO', `${inseridos.length} transação(ões) importada(s) de ${arquivo.name}`);
+            mostrarToast(`${inseridos.length} transação(ões) importada(s).`, 'sucesso');
             container.querySelector('#modal-importar-ofx').classList.remove('show');
             e.target.reset();
             await carregarExtrato();
