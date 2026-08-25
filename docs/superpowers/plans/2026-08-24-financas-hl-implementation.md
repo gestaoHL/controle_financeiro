@@ -510,7 +510,7 @@ git commit -m "feat: add Supabase client module and config template"
 - Test: `test/formato.test.js`
 
 **Interfaces:**
-- Produces: `formatarMoeda(valor: number): string`, `formatarData(dataString: string): string`, `formatarDataHora(iso: string): string` — used by every screen module that renders currency or dates.
+- Produces: `formatarMoeda(valor: number): string`, `formatarData(dataString: string): string`, `formatarDataHora(iso: string): string`, `escapeHtml(valor: string): string` — used by every screen module that renders currency, dates, or any user-controlled string (account names, transaction descriptions, member names, uploaded filenames) into an HTML template. **`escapeHtml` is required, not optional decoration**: every screen module that interpolates a database-sourced string into an `innerHTML` template — text content or attribute value — must wrap it in `escapeHtml()` first, or a member typing `<img src=x onerror=...>` into a lançamento's histórico (or any other free-text field) becomes stored XSS rendered in every other approved member's browser session, including the admin's. This was caught in Task 13's review after Tasks 11-13 had already shipped without it — those three tasks were retroactively patched; every task from Task 15 onward in this plan already has `escapeHtml()` wired into its render code from the start.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -518,7 +518,7 @@ git commit -m "feat: add Supabase client module and config template"
 // test/formato.test.js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatarMoeda, formatarData, formatarDataHora } from '../js/shared/formato.js';
+import { formatarMoeda, formatarData, formatarDataHora, escapeHtml } from '../js/shared/formato.js';
 
 test('formatarMoeda formats BRL currency', () => {
     assert.equal(formatarMoeda(1234.5), 'R$ 1.234,50');
@@ -535,6 +535,19 @@ test('formatarDataHora formats an ISO timestamp as pt-BR date + time', () => {
 
 test('formatarDataHora returns em dash for empty input', () => {
     assert.equal(formatarDataHora(''), '—');
+});
+
+test('escapeHtml escapes all five HTML-significant characters', () => {
+    assert.equal(escapeHtml(`<img src=x onerror="alert('x')">&`), '&lt;img src=x onerror=&quot;alert(&#39;x&#39;)&quot;&gt;&amp;');
+});
+
+test('escapeHtml passes through a safe string unchanged', () => {
+    assert.equal(escapeHtml('Supermercado'), 'Supermercado');
+});
+
+test('escapeHtml treats null/undefined as an empty string', () => {
+    assert.equal(escapeHtml(null), '');
+    assert.equal(escapeHtml(undefined), '');
 });
 ```
 
@@ -562,12 +575,18 @@ export function formatarDataHora(iso) {
     if (isNaN(data.getTime())) return '—';
     return `${data.toLocaleDateString('pt-BR')} ${data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
 }
+
+const ENTIDADES_HTML = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
+export function escapeHtml(valor) {
+    return String(valor ?? '').replace(/[&<>"']/g, c => ENTIDADES_HTML[c]);
+}
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npm test`
-Expected: PASS (4 tests)
+Expected: PASS (7 tests)
 
 - [ ] **Step 5: Commit**
 
@@ -1443,6 +1462,7 @@ git commit -m "feat: add app shell with sidebar router"
 import { supabase } from './supabaseClient.js';
 import { mostrarToast, executarComBloqueio } from './shared/toast.js';
 import { registrarHistorico } from './shared/auditoria.js';
+import { escapeHtml } from './shared/formato.js';
 
 export async function montarTela(container) {
     container.innerHTML = `
@@ -1515,7 +1535,7 @@ export async function montarTela(container) {
             const badge = plano?.tipo === 'RECEITA' ? 'badge-receita' : 'badge-despesa';
             return `<tr>
                 <td><span class="badge ${badge}">${tipo}</span></td>
-                <td>${conta.nome}</td>
+                <td>${escapeHtml(conta.nome)}</td>
                 <td>
                     <button class="btn-secondary" data-editar="${conta.id}">Editar</button>
                     <button class="btn-danger" data-excluir="${conta.id}">Excluir</button>
@@ -1616,7 +1636,7 @@ git commit -m "feat: add Plano de Contas screen"
 import { supabase } from './supabaseClient.js';
 import { mostrarToast, executarComBloqueio } from './shared/toast.js';
 import { registrarHistorico } from './shared/auditoria.js';
-import { formatarMoeda } from './shared/formato.js';
+import { formatarMoeda, escapeHtml } from './shared/formato.js';
 
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
@@ -1681,7 +1701,7 @@ export async function montarTela(container) {
                     data-conta="${conta.id}" data-mes="${mes}" value="${valorDe(conta.id, mes)}"></td>`;
             }).join('');
             const total = MESES.reduce((soma, _, i) => soma + valorDe(conta.id, i + 1), 0);
-            return `<tr><td>${conta.nome}</td>${celulas}<td><strong data-total="${conta.id}">${formatarMoeda(total)}</strong></td></tr>`;
+            return `<tr><td>${escapeHtml(conta.nome)}</td>${celulas}<td><strong data-total="${conta.id}">${formatarMoeda(total)}</strong></td></tr>`;
         }).join('');
 
         tbody.querySelectorAll('input[data-conta]').forEach(input => {
@@ -1752,7 +1772,7 @@ git commit -m "feat: add Orçamento screen"
 import { supabase } from './supabaseClient.js';
 import { mostrarToast, executarComBloqueio } from './shared/toast.js';
 import { registrarHistorico } from './shared/auditoria.js';
-import { formatarMoeda, formatarData } from './shared/formato.js';
+import { formatarMoeda, formatarData, escapeHtml } from './shared/formato.js';
 
 const FORMAS_PAGAMENTO = { pix: 'Pix', transferencia: 'Transferência', cartao: 'Cartão', dinheiro: 'Dinheiro', boleto: 'Boleto' };
 
@@ -1834,13 +1854,13 @@ export async function montarTela(container, contexto) {
 
         const selectFiltro = container.querySelector('#filtro-conta');
         selectFiltro.innerHTML = '<option value="">Todas as contas</option>' +
-            contas.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+            contas.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
     }
 
     function popularSelectContaModal(tipo) {
         const select = container.querySelector('#lancamento-conta');
         const filtradas = contas.filter(c => c.plano_contas?.tipo === tipo);
-        select.innerHTML = filtradas.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+        select.innerHTML = filtradas.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
     }
 
     async function carregarLancamentos() {
@@ -1871,15 +1891,15 @@ export async function montarTela(container, contexto) {
                    <button class="btn-danger" data-excluir="${l.id}">Excluir</button>`
                 : '<span class="text-muted">—</span>';
             const comprovante = l.comprovante_url
-                ? `<button class="btn-secondary" data-ver-comprovante="${l.comprovante_url}">Ver</button>`
+                ? `<button class="btn-secondary" data-ver-comprovante="${escapeHtml(l.comprovante_url)}">Ver</button>`
                 : '<span class="text-muted">—</span>';
 
             return `<tr>
                 <td>${formatarData(l.data)}</td>
                 <td><span class="badge ${l.tipo === 'RECEITA' ? 'badge-receita' : 'badge-despesa'}">${l.tipo === 'RECEITA' ? 'Receita' : 'Despesa'}</span></td>
-                <td>${l.contas?.nome ?? '—'}</td>
-                <td>${l.historico}</td>
-                <td>${l.perfis?.nome ?? '—'}</td>
+                <td>${escapeHtml(l.contas?.nome ?? '—')}</td>
+                <td>${escapeHtml(l.historico)}</td>
+                <td>${escapeHtml(l.perfis?.nome ?? '—')}</td>
                 <td><strong>${formatarMoeda(l.valor)}</strong></td>
                 <td>${comprovante}</td>
                 <td>${acoes}</td>
@@ -2171,7 +2191,7 @@ git commit -m "feat: add Dashboard screen"
 ```javascript
 import { supabase } from './supabaseClient.js';
 import { mostrarToast } from './shared/toast.js';
-import { formatarMoeda, formatarData } from './shared/formato.js';
+import { formatarMoeda, formatarData, escapeHtml } from './shared/formato.js';
 
 export async function montarTela(container) {
     const hoje = new Date().toISOString().slice(0, 10);
@@ -2237,7 +2257,7 @@ export async function montarTela(container) {
         container2.innerHTML = nomes.map(nome => {
             const { receitas, despesas } = porMembro[nome];
             return `<div class="summary-card">
-                <div style="font-weight:700;">${nome}</div>
+                <div style="font-weight:700;">${escapeHtml(nome)}</div>
                 <div class="text-muted" style="font-size:0.8rem; margin-top:0.4rem;">Receitas: <strong style="color:var(--cor-receita);">${formatarMoeda(receitas)}</strong></div>
                 <div class="text-muted" style="font-size:0.8rem;">Despesas: <strong style="color:var(--cor-despesa);">${formatarMoeda(despesas)}</strong></div>
             </div>`;
@@ -2252,10 +2272,10 @@ export async function montarTela(container) {
         }
         tbody.innerHTML = lancamentos.map(l => `<tr>
             <td>${formatarData(l.data)}</td>
-            <td>${l.perfis?.nome ?? '—'}</td>
+            <td>${escapeHtml(l.perfis?.nome ?? '—')}</td>
             <td><span class="badge ${l.tipo === 'RECEITA' ? 'badge-receita' : 'badge-despesa'}">${l.tipo === 'RECEITA' ? 'Receita' : 'Despesa'}</span></td>
-            <td>${l.contas?.nome ?? '—'}</td>
-            <td>${l.historico}</td>
+            <td>${escapeHtml(l.contas?.nome ?? '—')}</td>
+            <td>${escapeHtml(l.historico)}</td>
             <td>${formatarMoeda(l.valor)}</td>
         </tr>`).join('');
     }
@@ -2323,7 +2343,7 @@ git commit -m "feat: add Prestação de Contas screen"
 import { supabase } from './supabaseClient.js';
 import { mostrarToast, executarComBloqueio } from './shared/toast.js';
 import { registrarHistorico } from './shared/auditoria.js';
-import { formatarMoeda, formatarData } from './shared/formato.js';
+import { formatarMoeda, formatarData, escapeHtml } from './shared/formato.js';
 import { parseOFX, lerArquivoComoTexto } from './shared/ofxParser.js';
 
 export async function montarTela(container) {
@@ -2412,7 +2432,7 @@ export async function montarTela(container) {
 
         const selectFiltro = container.querySelector('#filtro-conta-bancaria');
         const selectOfx = container.querySelector('#ofx-conta');
-        const opcoes = contasBancarias.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+        const opcoes = contasBancarias.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
         selectFiltro.innerHTML = '<option value="">Todas as contas</option>' + opcoes;
         selectOfx.innerHTML = opcoes;
     }
@@ -2424,7 +2444,7 @@ export async function montarTela(container) {
             return;
         }
         tbody.innerHTML = contasBancarias.map(c => `<tr>
-            <td>${c.nome}</td><td>${c.banco ?? '—'}</td><td>${c.agencia ?? '—'}</td><td>${c.numero_conta ?? '—'}</td>
+            <td>${escapeHtml(c.nome)}</td><td>${escapeHtml(c.banco ?? '—')}</td><td>${escapeHtml(c.agencia ?? '—')}</td><td>${escapeHtml(c.numero_conta ?? '—')}</td>
             <td><button class="btn-danger" data-excluir-conta="${c.id}">Excluir</button></td>
         </tr>`).join('');
 
@@ -2466,9 +2486,9 @@ export async function montarTela(container) {
                 ? `<button class="btn-secondary" data-desfazer="${it.id}">Desfazer</button>`
                 : `<button class="btn-primary" data-conciliar="${it.id}">Conciliar</button>`;
             return `<tr>
-                <td>${it.contas_bancarias?.nome ?? '—'}</td>
+                <td>${escapeHtml(it.contas_bancarias?.nome ?? '—')}</td>
                 <td>${formatarData(it.data)}</td>
-                <td>${it.historico}</td>
+                <td>${escapeHtml(it.historico)}</td>
                 <td><span class="badge ${it.tipo === 'CREDITO' ? 'badge-receita' : 'badge-despesa'}">${it.tipo === 'CREDITO' ? 'Crédito' : 'Débito'}</span></td>
                 <td>${formatarMoeda(it.valor)}</td>
                 <td>${badgeStatus}</td>
@@ -2505,7 +2525,7 @@ export async function montarTela(container) {
 
         painel.innerHTML = data.map(l => `
             <div style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0; border-bottom:1px solid var(--cor-borda);">
-                <span>${formatarData(l.data)} — ${l.historico} (${l.contas?.nome ?? '—'})</span>
+                <span>${formatarData(l.data)} — ${escapeHtml(l.historico)} (${escapeHtml(l.contas?.nome ?? '—')})</span>
                 <span style="display:flex; align-items:center; gap:0.6rem;">
                     <strong>${formatarMoeda(l.valor)}</strong>
                     <button class="btn-primary" data-selecionar="${l.id}">Selecionar</button>
@@ -2664,7 +2684,7 @@ git commit -m "feat: add Conciliação Bancária screen"
 ```javascript
 import { supabase } from './supabaseClient.js';
 import { mostrarToast } from './shared/toast.js';
-import { formatarMoeda } from './shared/formato.js';
+import { formatarMoeda, escapeHtml } from './shared/formato.js';
 
 let grafico = null;
 
@@ -2728,7 +2748,7 @@ export async function montarTela(container) {
         tbody.innerHTML = contas.map(nome => {
             const valor = totalPorConta[nome];
             const pct = totalGeral > 0 ? ((valor / totalGeral) * 100).toFixed(1) : '0.0';
-            return `<tr><td>${nome}</td><td>${formatarMoeda(valor)}</td><td>${pct}%</td></tr>`;
+            return `<tr><td>${escapeHtml(nome)}</td><td>${formatarMoeda(valor)}</td><td>${pct}%</td></tr>`;
         }).join('');
     }
 
@@ -2790,7 +2810,7 @@ from the Lançamentos screen.
 ```javascript
 import { supabase } from './supabaseClient.js';
 import { mostrarToast } from './shared/toast.js';
-import { formatarMoeda, formatarData } from './shared/formato.js';
+import { formatarMoeda, formatarData, escapeHtml } from './shared/formato.js';
 
 export async function montarTela(container) {
     container.innerHTML = `
@@ -2809,7 +2829,7 @@ export async function montarTela(container) {
 
     const { data: membros } = await supabase.from('perfis').select('id, nome').eq('status', 'aprovado').order('nome');
     const selectMembro = container.querySelector('#transp-filtro-membro');
-    selectMembro.innerHTML += (membros ?? []).map(m => `<option value="${m.id}">${m.nome}</option>`).join('');
+    selectMembro.innerHTML += (membros ?? []).map(m => `<option value="${m.id}">${escapeHtml(m.nome)}</option>`).join('');
 
     async function carregar() {
         const membroId = selectMembro.value;
@@ -2832,10 +2852,10 @@ export async function montarTela(container) {
         }
         tbody.innerHTML = lancamentos.map(l => `<tr>
             <td>${formatarData(l.data)}</td>
-            <td>${l.perfis?.nome ?? '—'}</td>
+            <td>${escapeHtml(l.perfis?.nome ?? '—')}</td>
             <td><span class="badge ${l.tipo === 'RECEITA' ? 'badge-receita' : 'badge-despesa'}">${l.tipo === 'RECEITA' ? 'Receita' : 'Despesa'}</span></td>
-            <td>${l.contas?.nome ?? '—'}</td>
-            <td>${l.historico}</td>
+            <td>${escapeHtml(l.contas?.nome ?? '—')}</td>
+            <td>${escapeHtml(l.historico)}</td>
             <td>${formatarMoeda(l.valor)}</td>
         </tr>`).join('');
     }
@@ -2881,7 +2901,7 @@ git commit -m "feat: add Transparência screen"
 import { supabase } from './supabaseClient.js';
 import { mostrarToast, executarComBloqueio } from './shared/toast.js';
 import { registrarHistorico } from './shared/auditoria.js';
-import { formatarDataHora } from './shared/formato.js';
+import { formatarDataHora, escapeHtml } from './shared/formato.js';
 
 export async function montarTela(container, contexto) {
     const souAdmin = contexto.perfil.papel === 'admin';
@@ -2917,7 +2937,7 @@ export async function montarTela(container, contexto) {
                 acoes += `<button class="btn-secondary" data-alternar-papel="${m.id}" data-proximo="${proximoPapel}">Tornar ${proximoPapel}</button>`;
             }
             return `<tr>
-                <td>${m.nome}</td><td>${m.email}</td><td>${m.papel}</td>
+                <td>${escapeHtml(m.nome)}</td><td>${escapeHtml(m.email)}</td><td>${m.papel}</td>
                 <td><span class="badge ${badgeStatus}">${textoStatus}</span></td>
                 <td>${formatarDataHora(m.created_at)}</td>
                 ${souAdmin ? `<td>${acoes}</td>` : ''}
@@ -2988,7 +3008,7 @@ git commit -m "feat: add Membros screen (approval and role management)"
 ```javascript
 import { supabase } from './supabaseClient.js';
 import { mostrarToast } from './shared/toast.js';
-import { formatarDataHora } from './shared/formato.js';
+import { formatarDataHora, escapeHtml } from './shared/formato.js';
 
 export async function montarTela(container) {
     container.innerHTML = `
@@ -3024,10 +3044,10 @@ export async function montarTela(container) {
         }
         tbody.innerHTML = itens.map(it => `<tr>
             <td>${formatarDataHora(it.created_at)}</td>
-            <td>${it.perfis?.nome ?? '—'}</td>
-            <td>${it.modulo ?? '—'}</td>
-            <td>${it.acao}</td>
-            <td>${it.detalhes ?? '—'}</td>
+            <td>${escapeHtml(it.perfis?.nome ?? '—')}</td>
+            <td>${escapeHtml(it.modulo ?? '—')}</td>
+            <td>${escapeHtml(it.acao)}</td>
+            <td>${escapeHtml(it.detalhes ?? '—')}</td>
         </tr>`).join('');
     }
 
