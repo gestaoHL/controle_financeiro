@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finanças HL</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header"><h2>Finanças HL</h2></div>
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-link active" data-page="dashboard">📊 Dashboard</a>
+                <a href="#plano-contas" class="nav-link" data-page="plano-contas">🗂️ Plano de Contas</a>
+                <a href="#orcamento" class="nav-link" data-page="orcamento">💵 Orçamento</a>
+                <a href="#lancamentos" class="nav-link" data-page="lancamentos">📝 Lançamentos</a>
+                <a href="#prestacao-contas" class="nav-link" data-page="prestacao-contas">📋 Prestação de Contas</a>
+                <a href="#conciliacao-bancaria" class="nav-link" data-page="conciliacao-bancaria">🏦 Conciliação Bancária</a>
+                <a href="#transparencia" class="nav-link" data-page="transparencia">🔍 Transparência</a>
+                <a href="#relatorios" class="nav-link" data-page="relatorios">📈 Relatórios</a>
+                <a href="#membros" class="nav-link" data-page="membros">👥 Membros</a>
+                <a href="#historico" class="nav-link" data-page="historico">🕒 Histórico</a>
+            </nav>
+            <div class="sidebar-footer">
+                <span id="user-name" class="user-name">Carregando...</span>
+                <button id="logout-btn" class="btn-logout">Sair 🚪</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header"><h2 id="page-title">Dashboard</h2></header>
+            <div class="page-content">
+                <section id="page-dashboard" class="page active"></section>
+                <section id="page-plano-contas" class="page"></section>
+                <section id="page-orcamento" class="page"></section>
+                <section id="page-lancamentos" class="page"></section>
+                <section id="page-prestacao-contas" class="page"></section>
+                <section id="page-conciliacao-bancaria" class="page"></section>
+                <section id="page-transparencia" class="page"></section>
+                <section id="page-relatorios" class="page"></section>
+                <section id="page-membros" class="page"></section>
+                <section id="page-historico" class="page"></section>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
