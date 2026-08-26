@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { mostrarToast, executarComBloqueio } from './shared/toast.js';
 import { registrarHistorico } from './shared/auditoria.js';
-import { formatarMoeda, formatarData, escapeHtml } from './shared/formato.js';
+import { formatarMoeda, formatarData, escapeHtml, aplicarMascaraMoeda, valorMoedaParaNumero } from './shared/formato.js';
 import { agruparPorTipoEGrupo } from './shared/grupos.js';
 
 const FORMAS_PAGAMENTO = { pix: 'Pix', transferencia: 'Transferência', cartao: 'Cartão', dinheiro: 'Dinheiro', boleto: 'Boleto' };
@@ -50,8 +50,8 @@ export async function montarTela(container, contexto) {
                         <textarea id="lancamento-descricao" rows="2"></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="lancamento-valor">Valor (R$)</label>
-                        <input type="number" id="lancamento-valor" step="0.01" min="0.01" required>
+                        <label for="lancamento-valor">Valor</label>
+                        <input type="text" id="lancamento-valor" inputmode="decimal" placeholder="R$ 0,00" required>
                     </div>
                     <div class="form-group">
                         <label for="lancamento-forma">Forma de pagamento</label>
@@ -74,6 +74,8 @@ export async function montarTela(container, contexto) {
 
     let secoes = [];
     let lancamentos = [];
+
+    aplicarMascaraMoeda(container.querySelector('#lancamento-valor'));
 
     async function carregarContas() {
         const [{ data: planosData, error: erroPlanos }, { data: contasData, error: erroContas }] = await Promise.all([
@@ -175,7 +177,7 @@ export async function montarTela(container, contexto) {
         container.querySelector('#lancamento-data').value = lancamento?.data ?? new Date().toISOString().slice(0, 10);
         container.querySelector('#lancamento-historico').value = lancamento?.historico ?? '';
         container.querySelector('#lancamento-descricao').value = lancamento?.descricao ?? '';
-        container.querySelector('#lancamento-valor').value = lancamento?.valor ?? '';
+        container.querySelector('#lancamento-valor').value = lancamento ? formatarMoeda(lancamento.valor) : '';
         container.querySelector('#lancamento-forma').value = lancamento?.forma_pagamento ?? 'pix';
         container.querySelector('#lancamento-comprovante').value = '';
         modal.classList.add('show');
@@ -220,13 +222,16 @@ export async function montarTela(container, contexto) {
                 return;
             }
 
+            const valor = valorMoedaParaNumero(container.querySelector('#lancamento-valor').value);
+            if (valor <= 0) { mostrarToast('Informe um valor maior que zero.', 'erro'); return; }
+
             const payload = {
                 tipo: container.querySelector('#lancamento-tipo').value,
                 conta_id: Number(container.querySelector('#lancamento-conta').value),
                 data: container.querySelector('#lancamento-data').value,
                 historico: container.querySelector('#lancamento-historico').value.trim(),
                 descricao: container.querySelector('#lancamento-descricao').value.trim() || null,
-                valor: Number(container.querySelector('#lancamento-valor').value),
+                valor,
                 forma_pagamento: container.querySelector('#lancamento-forma').value,
                 ...(comprovanteUrl ? { comprovante_url: comprovanteUrl } : {})
             };

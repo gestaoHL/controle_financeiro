@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { mostrarToast, executarComBloqueio } from './shared/toast.js';
 import { registrarHistorico } from './shared/auditoria.js';
-import { formatarMoeda, escapeHtml } from './shared/formato.js';
+import { formatarMoeda, escapeHtml, aplicarMascaraMoeda, valorMoedaParaNumero } from './shared/formato.js';
 import { agruparPorTipoEGrupo } from './shared/grupos.js';
 
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -67,8 +67,8 @@ export async function montarTela(container) {
     function linhaConta(conta) {
         const celulas = MESES.map((_, i) => {
             const mes = i + 1;
-            return `<td><input type="number" step="0.01" min="0" style="width:80px;"
-                data-conta="${conta.id}" data-mes="${mes}" value="${valorDe(conta.id, mes)}"></td>`;
+            return `<td><input type="text" inputmode="decimal" style="width:90px;"
+                data-conta="${conta.id}" data-mes="${mes}" value="${formatarMoeda(valorDe(conta.id, mes))}"></td>`;
         }).join('');
         return `<tr><td style="padding-left:1.5rem;">${escapeHtml(conta.nome)}</td>${celulas}<td><strong>${formatarMoeda(totalContaAno(conta.id))}</strong></td></tr>`;
     }
@@ -98,6 +98,7 @@ export async function montarTela(container) {
         `).join('');
 
         tbody.querySelectorAll('input[data-conta]').forEach(input => {
+            aplicarMascaraMoeda(input);
             input.addEventListener('change', () => salvarValor(ano, input));
         });
     }
@@ -105,7 +106,7 @@ export async function montarTela(container) {
     async function salvarValor(ano, input) {
         const contaId = Number(input.dataset.conta);
         const mes = Number(input.dataset.mes);
-        const valor = Number(input.value) || 0;
+        const valor = valorMoedaParaNumero(input.value);
 
         const { error } = await supabase.from('orcamento_valores')
             .upsert({ ano, mes, conta_id: contaId, valor }, { onConflict: 'ano,mes,conta_id' });

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatarMoeda, formatarData, formatarDataHora, escapeHtml, classeParaAcao } from '../js/shared/formato.js';
+import { formatarMoeda, formatarData, formatarDataHora, escapeHtml, classeParaAcao, valorMoedaParaNumero } from '../js/shared/formato.js';
 
 test('formatarMoeda formats BRL currency', () => {
     assert.equal(formatarMoeda(1234.5), 'R$ 1.234,50');
@@ -44,4 +44,19 @@ test('classeParaAcao mapeia cada tipo de ação conhecido para sua classe de bad
 
 test('classeParaAcao retorna uma classe neutra para ações desconhecidas', () => {
     assert.equal(classeParaAcao('ALGO_NOVO'), 'badge-acao-outro');
+});
+
+test('valorMoedaParaNumero converte um valor mascarado em reais para número', () => {
+    assert.equal(valorMoedaParaNumero('R$ 1.234,56'), 1234.56);
+    assert.equal(valorMoedaParaNumero('R$ 0,50'), 0.5);
+});
+
+test('valorMoedaParaNumero trata campo vazio ou sem dígitos como zero', () => {
+    assert.equal(valorMoedaParaNumero(''), 0);
+    assert.equal(valorMoedaParaNumero('R$ '), 0);
+    assert.equal(valorMoedaParaNumero(null), 0);
+});
+
+test('valorMoedaParaNumero ignora qualquer caractere que não seja dígito', () => {
+    assert.equal(valorMoedaParaNumero('1.234'), 12.34);
 });

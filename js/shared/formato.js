@@ -34,3 +34,16 @@ const CLASSES_ACAO = {
 export function classeParaAcao(acao) {
     return CLASSES_ACAO[acao] ?? 'badge-acao-outro';
 }
+
+export function valorMoedaParaNumero(texto) {
+    const digitos = String(texto ?? '').replace(/\D/g, '');
+    return digitos ? Number(digitos) / 100 : 0;
+}
+
+export function aplicarMascaraMoeda(input) {
+    input.setAttribute('inputmode', 'decimal');
+    input.addEventListener('input', () => {
+        const digitos = input.value.replace(/\D/g, '');
+        input.value = digitos ? formatarMoeda(Number(digitos) / 100) : '';
+    });
+}
