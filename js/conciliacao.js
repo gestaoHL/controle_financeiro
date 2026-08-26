@@ -27,22 +27,34 @@ export async function montarTela(container) {
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin-bottom:1rem;">
-                <div class="summary-card" style="border-top:4px solid var(--cor-receita); margin-bottom:0;">
-                    <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase;">Créditos no extrato</div>
-                    <div id="resumo-creditos" style="font-weight:800; margin-top:0.35rem;">—</div>
+            <div class="premium-grid" style="margin-bottom:1rem;">
+                <div class="card-premium bg-white border-success">
+                    <div class="card-icon text-success">💵</div>
+                    <div class="card-info">
+                        <h3 class="text-gray">Créditos no extrato</h3>
+                        <p class="card-value text-dark" id="resumo-creditos">—</p>
+                    </div>
                 </div>
-                <div class="summary-card" style="border-top:4px solid var(--cor-despesa); margin-bottom:0;">
-                    <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase;">Débitos no extrato</div>
-                    <div id="resumo-debitos" style="font-weight:800; margin-top:0.35rem;">—</div>
+                <div class="card-premium bg-white border-danger">
+                    <div class="card-icon text-danger">💸</div>
+                    <div class="card-info">
+                        <h3 class="text-gray">Débitos no extrato</h3>
+                        <p class="card-value text-dark" id="resumo-debitos">—</p>
+                    </div>
                 </div>
-                <div class="summary-card" style="border-top:4px solid var(--cor-primaria); margin-bottom:0;">
-                    <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase;">Conciliados</div>
-                    <div id="resumo-conciliados" style="font-weight:800; margin-top:0.35rem;">—</div>
+                <div class="card-premium bg-white border-purple">
+                    <div class="card-icon text-purple">✅</div>
+                    <div class="card-info">
+                        <h3 class="text-gray">Conciliados</h3>
+                        <p class="card-value text-dark" id="resumo-conciliados">—</p>
+                    </div>
                 </div>
-                <div class="summary-card" style="border-top:4px solid var(--color-warning); margin-bottom:0;">
-                    <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase;">Pendentes</div>
-                    <div id="resumo-pendentes" style="font-weight:800; margin-top:0.35rem;">—</div>
+                <div class="card-premium bg-white border-warning">
+                    <div class="card-icon text-warning">⏳</div>
+                    <div class="card-info">
+                        <h3 class="text-gray">Pendentes</h3>
+                        <p class="card-value text-dark" id="resumo-pendentes">—</p>
+                    </div>
                 </div>
             </div>
 

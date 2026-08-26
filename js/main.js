@@ -8,7 +8,6 @@ const TITULOS = {
     'prestacao-contas': 'Prestação de Contas',
     'conciliacao-bancaria': 'Conciliação Bancária',
     'transparencia': 'Transparência',
-    'relatorios': 'Relatórios',
     'membros': 'Membros',
     'historico': 'Histórico'
 };
@@ -24,7 +23,6 @@ const CARREGADORES_TELA = {
     'prestacao-contas': () => import('./prestacaoContas.js'),
     'conciliacao-bancaria': () => import('./conciliacao.js'),
     'transparencia': () => import('./transparencia.js'),
-    'relatorios': () => import('./relatorios.js'),
     'membros': () => import('./membros.js'),
     'historico': () => import('./historico.js')
 };

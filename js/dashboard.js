@@ -10,46 +10,54 @@ export async function montarTela(container) {
     const anoAtual = new Date().getFullYear();
 
     container.innerHTML = `
-        <div class="card">
-            <div class="page-header">
-                <h3>Execução do ano</h3>
-                <select id="dash-ano"></select>
-            </div>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem;">
-                <div class="summary-card" style="border-top:4px solid var(--cor-receita);">
-                    <div class="text-muted" style="font-size:0.75rem; text-transform:uppercase;">Receitas</div>
-                    <div style="display:flex; justify-content:space-between; margin-top:0.5rem;">
-                        <div><div class="text-muted" style="font-size:0.7rem;">Orçado</div><div id="dash-orc-receita" style="font-weight:800;">—</div></div>
-                        <div style="text-align:right;"><div class="text-muted" style="font-size:0.7rem;">Realizado</div><div id="dash-real-receita" style="font-weight:800; color:var(--cor-receita);">—</div></div>
-                    </div>
-                </div>
-                <div class="summary-card" style="border-top:4px solid var(--cor-despesa);">
-                    <div class="text-muted" style="font-size:0.75rem; text-transform:uppercase;">Despesas</div>
-                    <div style="display:flex; justify-content:space-between; margin-top:0.5rem;">
-                        <div><div class="text-muted" style="font-size:0.7rem;">Orçado</div><div id="dash-orc-despesa" style="font-weight:800;">—</div></div>
-                        <div style="text-align:right;"><div class="text-muted" style="font-size:0.7rem;">Realizado</div><div id="dash-real-despesa" style="font-weight:800; color:var(--cor-despesa);">—</div></div>
-                    </div>
-                </div>
-                <div class="summary-card" style="border-top:4px solid var(--cor-primaria);">
-                    <div class="text-muted" style="font-size:0.75rem; text-transform:uppercase;">Saldo do ano</div>
-                    <div id="dash-saldo" style="font-weight:800; font-size:1.3rem; margin-top:0.5rem;">—</div>
-                </div>
-            </div>
+        <div class="page-header">
+            <h3>Execução do ano</h3>
+            <select id="dash-ano"></select>
         </div>
 
-        <div class="card">
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem;">
-                <div class="summary-card" style="margin-bottom:0;">
-                    <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase;">Maior despesa</div>
-                    <div id="dash-maior-despesa" style="font-weight:800; margin-top:0.35rem;">—</div>
+        <div class="premium-grid">
+            <div class="card-premium bg-gradient-primary">
+                <div class="card-icon">💰</div>
+                <div class="card-info">
+                    <h3>Saldo do ano</h3>
+                    <p class="card-value" id="dash-saldo">—</p>
                 </div>
-                <div class="summary-card" style="margin-bottom:0;">
-                    <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase;">Média diária de despesas</div>
-                    <div id="dash-media-diaria" style="font-weight:800; margin-top:0.35rem;">—</div>
+            </div>
+            <div class="card-premium bg-white border-success">
+                <div class="card-icon text-success">📈</div>
+                <div class="card-info">
+                    <h3 class="text-gray">Receitas</h3>
+                    <p class="card-value text-dark" id="dash-real-receita">—</p>
+                    <p class="text-muted" style="font-size:0.78rem; margin-top:0.2rem;">Orçado: <span id="dash-orc-receita">—</span></p>
                 </div>
-                <div class="summary-card" style="margin-bottom:0;">
-                    <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase;">Qtd. de lançamentos</div>
-                    <div id="dash-qtd-lancamentos" style="font-weight:800; margin-top:0.35rem;">—</div>
+            </div>
+            <div class="card-premium bg-white border-danger">
+                <div class="card-icon text-danger">📉</div>
+                <div class="card-info">
+                    <h3 class="text-gray">Despesas</h3>
+                    <p class="card-value text-dark" id="dash-real-despesa">—</p>
+                    <p class="text-muted" style="font-size:0.78rem; margin-top:0.2rem;">Orçado: <span id="dash-orc-despesa">—</span></p>
+                </div>
+            </div>
+            <div class="card-premium bg-white border-warning">
+                <div class="card-icon text-warning">⚠️</div>
+                <div class="card-info">
+                    <h3 class="text-gray">Maior despesa</h3>
+                    <p class="card-value text-dark" id="dash-maior-despesa">—</p>
+                </div>
+            </div>
+            <div class="card-premium bg-white border-info">
+                <div class="card-icon text-info">📅</div>
+                <div class="card-info">
+                    <h3 class="text-gray">Média diária de despesas</h3>
+                    <p class="card-value text-dark" id="dash-media-diaria">—</p>
+                </div>
+            </div>
+            <div class="card-premium bg-white border-purple">
+                <div class="card-icon text-purple">📊</div>
+                <div class="card-info">
+                    <h3 class="text-gray">Qtd. de lançamentos</h3>
+                    <p class="card-value text-dark" id="dash-qtd-lancamentos">—</p>
                 </div>
             </div>
         </div>
@@ -103,10 +111,7 @@ export async function montarTela(container) {
         container.querySelector('#dash-real-receita').textContent = formatarMoeda(realReceita);
         container.querySelector('#dash-orc-despesa').textContent = formatarMoeda(orcDespesa);
         container.querySelector('#dash-real-despesa').textContent = formatarMoeda(realDespesa);
-        const saldo = realReceita - realDespesa;
-        const saldoEl = container.querySelector('#dash-saldo');
-        saldoEl.textContent = formatarMoeda(saldo);
-        saldoEl.style.color = saldo >= 0 ? 'var(--cor-receita)' : 'var(--cor-despesa)';
+        container.querySelector('#dash-saldo').textContent = formatarMoeda(realReceita - realDespesa);
 
         const hoje = new Date();
         const diasDoPeriodo = ano === anoAtual
@@ -160,11 +165,15 @@ export async function montarTela(container) {
             data: {
                 labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
                 datasets: [
-                    { label: 'Receitas', data: receitasPorMes, backgroundColor: '#10b981' },
-                    { label: 'Despesas', data: despesasPorMes, backgroundColor: '#ef4444' }
+                    { label: 'Receitas', data: receitasPorMes, backgroundColor: '#10b981', borderRadius: 6, borderSkipped: false, hoverBackgroundColor: '#059669' },
+                    { label: 'Despesas', data: despesasPorMes, backgroundColor: '#ef4444', borderRadius: 6, borderSkipped: false, hoverBackgroundColor: '#dc2626' }
                 ]
             },
-            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom' } },
+                scales: { y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } }, x: { grid: { display: false } } }
+            }
         });
     }
 

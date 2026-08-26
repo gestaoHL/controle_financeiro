@@ -162,6 +162,41 @@ input:focus, select:focus, textarea:focus {
 .text-center { text-align: center; }
 .text-muted { color: var(--cor-texto-suave); }
 
+.premium-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem; }
+
+.card-premium {
+    padding: 1.2rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+.card-premium:hover { transform: translateY(-5px); }
+
+.bg-gradient-primary { background: linear-gradient(135deg, var(--cor-primaria) 0%, var(--cor-primaria-escura) 100%); color: #fff; }
+.bg-white { background: var(--cor-superficie); }
+
+.border-success { border-bottom: 4px solid var(--color-success); }
+.border-danger { border-bottom: 4px solid var(--color-danger); }
+.border-warning { border-bottom: 4px solid var(--color-warning); }
+.border-info { border-bottom: 4px solid #3b82f6; }
+.border-purple { border-bottom: 4px solid #8b5cf6; }
+
+.card-icon { font-size: 2.2rem; flex-shrink: 0; }
+.card-info { min-width: 0; }
+.card-info h3 { margin: 0 0 0.2rem; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+.card-value { font-size: 1.4rem; font-weight: 800; line-height: 1.2; margin: 0; word-break: break-word; }
+
+.text-success { color: var(--color-success) !important; }
+.text-danger { color: var(--color-danger) !important; }
+.text-warning { color: var(--color-warning) !important; }
+.text-info { color: #3b82f6 !important; }
+.text-purple { color: #8b5cf6 !important; }
+.text-gray { color: var(--color-gray); }
+.text-dark { color: var(--cor-texto); }
+
 .login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg, var(--cor-primaria-escura), var(--cor-primaria)); }
 .login-card { background: var(--cor-superficie); border-radius: var(--raio); padding: 2.5rem; width: 100%; max-width: 380px; box-shadow: var(--sombra); }
 .login-card h1 { margin-top: 0; font-size: 1.4rem; color: var(--cor-primaria-escura); }
