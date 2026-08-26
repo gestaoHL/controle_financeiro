@@ -1,6 +1,8 @@
 import { supabase } from './supabaseClient.js';
 import { mostrarToast } from './shared/toast.js';
-import { formatarMoeda } from './shared/formato.js';
+import { formatarMoeda, escapeHtml } from './shared/formato.js';
+import { agruparPorTipoEGrupo } from './shared/grupos.js';
+import { calcularMaiorDespesa, calcularMediaDiaria, diasNoAno, calcularDesvioPorGrupo } from './shared/dashboardCalculos.js';
 
 let grafico = null;
 
@@ -9,8 +11,8 @@ export async function montarTela(container) {
 
     container.innerHTML = `
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                <h3 style="margin:0;">Execução do ano</h3>
+            <div class="page-header">
+                <h3>Execução do ano</h3>
                 <select id="dash-ano"></select>
             </div>
             <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem;">
@@ -36,8 +38,33 @@ export async function montarTela(container) {
         </div>
 
         <div class="card">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem;">
+                <div class="summary-card" style="margin-bottom:0;">
+                    <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase;">Maior despesa</div>
+                    <div id="dash-maior-despesa" style="font-weight:800; margin-top:0.35rem;">—</div>
+                </div>
+                <div class="summary-card" style="margin-bottom:0;">
+                    <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase;">Média diária de despesas</div>
+                    <div id="dash-media-diaria" style="font-weight:800; margin-top:0.35rem;">—</div>
+                </div>
+                <div class="summary-card" style="margin-bottom:0;">
+                    <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase;">Qtd. de lançamentos</div>
+                    <div id="dash-qtd-lancamentos" style="font-weight:800; margin-top:0.35rem;">—</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
             <h3 style="margin-top:0;">Receitas × Despesas por mês</h3>
             <canvas id="dash-grafico" height="90"></canvas>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top:0;">Desvio por grupo de contas</h3>
+            <table class="data-table">
+                <thead><tr><th>Grupo</th><th>Orçado</th><th>Realizado</th><th>Desvio</th></tr></thead>
+                <tbody id="dash-desvio-body"><tr><td colspan="4" class="text-center">Carregando...</td></tr></tbody>
+            </table>
         </div>
     `;
 
@@ -55,13 +82,15 @@ export async function montarTela(container) {
         const inicio = `${ano}-01-01`;
         const fim = `${ano}-12-31`;
 
-        const [{ data: lancamentos, error: erroLanc }, { data: orcamentos, error: erroOrc }] = await Promise.all([
-            supabase.from('lancamentos').select('tipo, valor, data').gte('data', inicio).lte('data', fim),
-            supabase.from('orcamento_valores').select('*, contas(plano_contas(tipo))').eq('ano', ano)
+        const [{ data: lancamentos, error: erroLanc }, { data: orcamentos, error: erroOrc }, { data: planos, error: erroPlanos }, { data: contas, error: erroContas }] = await Promise.all([
+            supabase.from('lancamentos').select('tipo, valor, data, conta_id').gte('data', inicio).lte('data', fim),
+            supabase.from('orcamento_valores').select('*, contas(plano_contas(tipo))').eq('ano', ano),
+            supabase.from('plano_contas').select('*'),
+            supabase.from('contas').select('*')
         ]);
 
-        if (erroLanc || erroOrc) {
-            mostrarToast('Erro ao carregar dashboard: ' + (erroLanc || erroOrc).message, 'erro');
+        if (erroLanc || erroOrc || erroPlanos || erroContas) {
+            mostrarToast('Erro ao carregar dashboard: ' + (erroLanc || erroOrc || erroPlanos || erroContas).message, 'erro');
             return;
         }
 
@@ -79,7 +108,41 @@ export async function montarTela(container) {
         saldoEl.textContent = formatarMoeda(saldo);
         saldoEl.style.color = saldo >= 0 ? 'var(--cor-receita)' : 'var(--cor-despesa)';
 
+        const hoje = new Date();
+        const diasDoPeriodo = ano === anoAtual
+            ? Math.ceil((hoje - new Date(ano, 0, 0)) / 86400000)
+            : diasNoAno(ano);
+
+        container.querySelector('#dash-maior-despesa').textContent = formatarMoeda(calcularMaiorDespesa(lancamentos));
+        container.querySelector('#dash-media-diaria').textContent = formatarMoeda(calcularMediaDiaria(lancamentos, diasDoPeriodo));
+        container.querySelector('#dash-qtd-lancamentos').textContent = String(lancamentos.length);
+
+        const secoes = agruparPorTipoEGrupo(planos, contas);
+        const orcamentoPorConta = {};
+        orcamentos.forEach(o => { orcamentoPorConta[o.conta_id] = (orcamentoPorConta[o.conta_id] ?? 0) + o.valor; });
+        const realizadoPorConta = {};
+        lancamentos.forEach(l => { if (l.conta_id) realizadoPorConta[l.conta_id] = (realizadoPorConta[l.conta_id] ?? 0) + l.valor; });
+
+        renderizarDesvioPorGrupo(calcularDesvioPorGrupo(secoes, orcamentoPorConta, realizadoPorConta));
         renderizarGrafico(lancamentos);
+    }
+
+    function renderizarDesvioPorGrupo(linhas) {
+        const tbody = container.querySelector('#dash-desvio-body');
+        if (!linhas.length) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center">Nenhum grupo configurado.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = linhas.map(l => {
+            const cor = l.tipo === 'RECEITA' ? 'var(--cor-receita)' : 'var(--cor-despesa)';
+            const sinalDesvio = l.desvioPct > 0 ? '+' : '';
+            return `<tr>
+                <td>${escapeHtml(l.nome)}</td>
+                <td>${formatarMoeda(l.orcado)}</td>
+                <td style="color:${cor};">${formatarMoeda(l.realizado)}</td>
+                <td>${sinalDesvio}${l.desvioPct.toFixed(1)}%</td>
+            </tr>`;
+        }).join('');
     }
 
     function renderizarGrafico(lancamentos) {
@@ -97,18 +160,11 @@ export async function montarTela(container) {
             data: {
                 labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
                 datasets: [
-                    { label: 'Receitas', data: receitasPorMes, backgroundColor: '#ab8ff1' },
-                    { label: 'Despesas', data: despesasPorMes, backgroundColor: '#dad7de' }
+                    { label: 'Receitas', data: receitasPorMes, backgroundColor: '#10b981' },
+                    { label: 'Despesas', data: despesasPorMes, backgroundColor: '#ef4444' }
                 ]
             },
-            options: {
-                responsive: true,
-                scales: {
-                    y: { beginAtZero: true, ticks: { color: '#8b8e9c' }, grid: { color: 'rgba(174,170,192,0.12)' } },
-                    x: { ticks: { color: '#8b8e9c' }, grid: { color: 'rgba(174,170,192,0.08)' } }
-                },
-                plugins: { legend: { labels: { color: '#aeaac0' } } }
-            }
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
         });
     }
 
