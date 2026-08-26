@@ -2,16 +2,18 @@ import { supabase } from './supabaseClient.js';
 import { mostrarToast, executarComBloqueio } from './shared/toast.js';
 import { registrarHistorico } from './shared/auditoria.js';
 import { formatarMoeda, escapeHtml } from './shared/formato.js';
+import { agruparPorTipoEGrupo } from './shared/grupos.js';
 
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const ROTULO_TIPO = { RECEITA: 'Receita', DESPESA: 'Despesa' };
 
 export async function montarTela(container) {
     const anoAtual = new Date().getFullYear();
 
     container.innerHTML = `
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                <h3 style="margin:0;">Orçamento por conta</h3>
+            <div class="page-header">
+                <h3>Orçamento por conta</h3>
                 <div class="form-group" style="margin:0; width:120px;">
                     <select id="orcamento-ano"></select>
                 </div>
@@ -35,20 +37,21 @@ export async function montarTela(container) {
     }
     selectAno.addEventListener('change', carregar);
 
-    let contas = [];
+    let secoes = [];
     let valores = [];
 
     async function carregar() {
         const ano = Number(selectAno.value);
-        const [{ data: contasData, error: erroContas }, { data: valoresData, error: erroValores }] = await Promise.all([
-            supabase.from('contas').select('*, plano_contas(tipo)').order('nome'),
+        const [{ data: planosData, error: erroPlanos }, { data: contasData, error: erroContas }, { data: valoresData, error: erroValores }] = await Promise.all([
+            supabase.from('plano_contas').select('*'),
+            supabase.from('contas').select('*').order('nome'),
             supabase.from('orcamento_valores').select('*').eq('ano', ano)
         ]);
-        if (erroContas || erroValores) {
-            mostrarToast('Erro ao carregar orçamento: ' + (erroContas || erroValores).message, 'erro');
+        if (erroPlanos || erroContas || erroValores) {
+            mostrarToast('Erro ao carregar orçamento: ' + (erroPlanos || erroContas || erroValores).message, 'erro');
             return;
         }
-        contas = contasData;
+        secoes = agruparPorTipoEGrupo(planosData, contasData);
         valores = valoresData;
         renderizar(ano);
     }
@@ -57,17 +60,42 @@ export async function montarTela(container) {
         return valores.find(v => v.conta_id === contaId && v.mes === mes)?.valor ?? 0;
     }
 
+    function totalContaAno(contaId) {
+        return MESES.reduce((soma, _, i) => soma + valorDe(contaId, i + 1), 0);
+    }
+
+    function linhaConta(conta) {
+        const celulas = MESES.map((_, i) => {
+            const mes = i + 1;
+            return `<td><input type="number" step="0.01" min="0" style="width:80px;"
+                data-conta="${conta.id}" data-mes="${mes}" value="${valorDe(conta.id, mes)}"></td>`;
+        }).join('');
+        return `<tr><td style="padding-left:1.5rem;">${escapeHtml(conta.nome)}</td>${celulas}<td><strong>${formatarMoeda(totalContaAno(conta.id))}</strong></td></tr>`;
+    }
+
+    function linhaSubtotalGrupo(grupo) {
+        const celulas = MESES.map((_, i) => {
+            const mes = i + 1;
+            const subtotal = grupo.contas.reduce((s, c) => s + valorDe(c.id, mes), 0);
+            return `<td><strong>${formatarMoeda(subtotal)}</strong></td>`;
+        }).join('');
+        const totalGrupo = grupo.contas.reduce((s, c) => s + totalContaAno(c.id), 0);
+        return `<tr style="background:var(--cor-fundo);"><td><strong>${escapeHtml(grupo.nome)}</strong></td>${celulas}<td><strong>${formatarMoeda(totalGrupo)}</strong></td></tr>`;
+    }
+
     function renderizar(ano) {
         const tbody = container.querySelector('#orcamento-body');
-        tbody.innerHTML = contas.map(conta => {
-            const celulas = MESES.map((_, i) => {
-                const mes = i + 1;
-                return `<td><input type="number" step="0.01" min="0" style="width:80px;"
-                    data-conta="${conta.id}" data-mes="${mes}" value="${valorDe(conta.id, mes)}"></td>`;
-            }).join('');
-            const total = MESES.reduce((soma, _, i) => soma + valorDe(conta.id, i + 1), 0);
-            return `<tr><td>${escapeHtml(conta.nome)}</td>${celulas}<td><strong data-total="${conta.id}">${formatarMoeda(total)}</strong></td></tr>`;
-        }).join('');
+        if (!secoes.length) {
+            tbody.innerHTML = '<tr><td colspan="14" class="text-center">Nenhuma conta cadastrada.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = secoes.map(secao => `
+            <tr><td colspan="14" style="padding-top:1rem; border-bottom:none;"><strong style="color:${secao.tipo === 'RECEITA' ? 'var(--cor-receita)' : 'var(--cor-despesa)'};">${ROTULO_TIPO[secao.tipo]}</strong></td></tr>
+            ${secao.grupos.map(grupo => `
+                ${linhaSubtotalGrupo(grupo)}
+                ${grupo.contas.map(linhaConta).join('')}
+            `).join('')}
+        `).join('');
 
         tbody.querySelectorAll('input[data-conta]').forEach(input => {
             input.addEventListener('change', () => salvarValor(ano, input));
@@ -88,12 +116,13 @@ export async function montarTela(container) {
         if (existente) existente.valor = valor;
         else valores.push({ ano, mes, conta_id: contaId, valor });
 
-        const totalEl = container.querySelector(`[data-total="${contaId}"]`);
-        const total = MESES.reduce((soma, _, i) => soma + valorDe(contaId, i + 1), 0);
-        totalEl.textContent = formatarMoeda(total);
-
-        const conta = contas.find(c => c.id === contaId);
-        await registrarHistorico('Orçamento', 'EDIÇÃO', `${conta?.nome} — ${MESES[mes - 1]}/${ano}: ${formatarMoeda(valor)}`);
+        let nomeConta = '';
+        secoes.forEach(s => s.grupos.forEach(g => {
+            const encontrada = g.contas.find(c => c.id === contaId);
+            if (encontrada) nomeConta = encontrada.nome;
+        }));
+        await registrarHistorico('Orçamento', 'EDIÇÃO', `${nomeConta} — ${MESES[mes - 1]}/${ano}: ${formatarMoeda(valor)}`);
+        renderizar(ano);
     }
 
     await carregar();
