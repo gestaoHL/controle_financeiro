@@ -2,14 +2,16 @@ import { supabase } from './supabaseClient.js';
 import { mostrarToast, executarComBloqueio } from './shared/toast.js';
 import { registrarHistorico } from './shared/auditoria.js';
 import { formatarMoeda, formatarData, escapeHtml } from './shared/formato.js';
+import { agruparPorTipoEGrupo } from './shared/grupos.js';
 
 const FORMAS_PAGAMENTO = { pix: 'Pix', transferencia: 'Transferência', cartao: 'Cartão', dinheiro: 'Dinheiro', boleto: 'Boleto' };
+const ROTULO_TIPO = { RECEITA: 'Receita', DESPESA: 'Despesa' };
 
 export async function montarTela(container, contexto) {
     container.innerHTML = `
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                <h3 style="margin:0;">Lançamentos</h3>
+            <div class="page-header">
+                <h3>Lançamentos</h3>
                 <button class="btn-primary" id="btn-novo-lancamento">+ Novo Lançamento</button>
             </div>
             <div style="display:flex; gap:0.75rem; margin-bottom:1rem; flex-wrap:wrap;">
@@ -73,23 +75,42 @@ export async function montarTela(container, contexto) {
         </div>
     `;
 
-    let contas = [];
+    let secoes = [];
     let lancamentos = [];
 
     async function carregarContas() {
-        const { data, error } = await supabase.from('contas').select('*, plano_contas(tipo)').order('nome');
-        if (error) { mostrarToast('Erro ao carregar contas: ' + error.message, 'erro'); return; }
-        contas = data;
+        const [{ data: planosData, error: erroPlanos }, { data: contasData, error: erroContas }] = await Promise.all([
+            supabase.from('plano_contas').select('*'),
+            supabase.from('contas').select('*').order('nome')
+        ]);
+        if (erroPlanos || erroContas) {
+            mostrarToast('Erro ao carregar contas: ' + (erroPlanos || erroContas).message, 'erro');
+            return;
+        }
+        secoes = agruparPorTipoEGrupo(planosData, contasData);
+        popularFiltroConta();
+    }
 
+    function popularFiltroConta() {
         const selectFiltro = container.querySelector('#filtro-conta');
-        selectFiltro.innerHTML = '<option value="">Todas as contas</option>' +
-            contas.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
+        const opcoes = secoes.flatMap(secao => secao.grupos.map(grupo => `
+            <optgroup label="${escapeHtml(ROTULO_TIPO[secao.tipo] + ' · ' + grupo.nome)}">
+                ${grupo.contas.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('')}
+            </optgroup>
+        `)).join('');
+        selectFiltro.innerHTML = '<option value="">Todas as contas</option>' + opcoes;
     }
 
     function popularSelectContaModal(tipo) {
         const select = container.querySelector('#lancamento-conta');
-        const filtradas = contas.filter(c => c.plano_contas?.tipo === tipo);
-        select.innerHTML = filtradas.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
+        const secao = secoes.find(s => s.tipo === tipo);
+        select.innerHTML = !secao || !secao.grupos.length
+            ? '<option value="" disabled>Nenhuma conta cadastrada para este tipo.</option>'
+            : secao.grupos.map(grupo => `
+                <optgroup label="${escapeHtml(grupo.nome)}">
+                    ${grupo.contas.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('')}
+                </optgroup>
+            `).join('');
     }
 
     async function carregarLancamentos() {
