@@ -189,6 +189,42 @@ input:focus, select:focus, textarea:focus {
 .card-info h3 { margin: 0 0 0.2rem; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
 .card-value { font-size: 1.4rem; font-weight: 800; line-height: 1.2; margin: 0; word-break: break-word; }
 
+.list-card {
+    background: var(--cor-superficie);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra);
+    border-left: 4px solid var(--cor-borda);
+    padding: 0.85rem 1.1rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    transition: box-shadow 0.15s, transform 0.15s;
+}
+.list-card:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.1); transform: translateY(-2px); }
+.list-card.tipo-receita { border-left-color: var(--cor-receita); }
+.list-card.tipo-despesa { border-left-color: var(--cor-despesa); }
+.list-card-main { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.list-card-titulo { font-weight: 700; color: var(--cor-texto); }
+.list-card-sub { font-size: 0.82rem; color: var(--cor-texto-suave); }
+.list-card-valor { font-weight: 800; font-size: 1.05rem; white-space: nowrap; }
+.list-card-acoes { display: flex; align-items: center; gap: 0.25rem; margin-left: auto; }
+
+.btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.05rem;
+    padding: 0.3rem 0.45rem;
+    border-radius: var(--raio);
+    line-height: 1;
+    transition: background 0.15s;
+}
+.btn-icon:hover { background: var(--cor-fundo); }
+.btn-icon.icon-danger:hover { background: #fee2e2; }
+
 .text-success { color: var(--color-success) !important; }
 .text-danger { color: var(--color-danger) !important; }
 .text-warning { color: var(--color-warning) !important; }

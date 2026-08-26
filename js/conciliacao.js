@@ -12,10 +12,7 @@ export async function montarTela(container) {
                 <h3>Contas bancárias</h3>
                 <button class="btn-primary" id="btn-nova-conta-bancaria">+ Nova Conta Bancária</button>
             </div>
-            <table class="data-table">
-                <thead><tr><th>Nome</th><th>Banco</th><th>Agência</th><th>Número</th><th></th></tr></thead>
-                <tbody id="contas-bancarias-body"><tr><td colspan="5" class="text-center">Carregando...</td></tr></tbody>
-            </table>
+            <div id="contas-bancarias-lista"><p class="text-center text-muted">Carregando...</p></div>
         </div>
 
         <div class="card">
@@ -140,17 +137,24 @@ export async function montarTela(container) {
     }
 
     function renderizarContasBancarias() {
-        const tbody = container.querySelector('#contas-bancarias-body');
+        const lista = container.querySelector('#contas-bancarias-lista');
         if (!contasBancarias.length) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center">Nenhuma conta bancária cadastrada.</td></tr>';
+            lista.innerHTML = '<p class="text-center text-muted">Nenhuma conta bancária cadastrada.</p>';
             return;
         }
-        tbody.innerHTML = contasBancarias.map(c => `<tr>
-            <td>${escapeHtml(c.nome)}</td><td>${escapeHtml(c.banco ?? '—')}</td><td>${escapeHtml(c.agencia ?? '—')}</td><td>${escapeHtml(c.numero_conta ?? '—')}</td>
-            <td><button class="btn-danger" data-excluir-conta="${c.id}">Excluir</button></td>
-        </tr>`).join('');
+        lista.innerHTML = contasBancarias.map(c => `
+            <div class="list-card">
+                <div class="list-card-main">
+                    <span class="list-card-titulo">${escapeHtml(c.nome)}</span>
+                    <span class="list-card-sub">${escapeHtml(c.banco ?? '—')} · Ag. ${escapeHtml(c.agencia ?? '—')} · Conta ${escapeHtml(c.numero_conta ?? '—')}</span>
+                </div>
+                <div class="list-card-acoes">
+                    <button class="btn-icon icon-danger" data-excluir-conta="${c.id}" title="Excluir conta bancária">🗑️</button>
+                </div>
+            </div>
+        `).join('');
 
-        tbody.querySelectorAll('[data-excluir-conta]').forEach(btn =>
+        lista.querySelectorAll('[data-excluir-conta]').forEach(btn =>
             btn.addEventListener('click', () => excluirContaBancaria(Number(btn.dataset.excluirConta))));
     }
 

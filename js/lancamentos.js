@@ -18,10 +18,7 @@ export async function montarTela(container, contexto) {
                 <select id="filtro-tipo"><option value="">Todos os tipos</option><option value="RECEITA">Receita</option><option value="DESPESA">Despesa</option></select>
                 <select id="filtro-conta"><option value="">Todas as contas</option></select>
             </div>
-            <table class="data-table">
-                <thead><tr><th>Data</th><th>Tipo</th><th>Conta</th><th>Histórico</th><th>Quem lançou</th><th>Valor</th><th>Comprovante</th><th></th></tr></thead>
-                <tbody id="lancamentos-body"><tr><td colspan="8" class="text-center">Carregando...</td></tr></tbody>
-            </table>
+            <div id="lancamentos-lista"><p class="text-center text-muted">Carregando...</p></div>
         </div>
 
         <div class="modal" id="modal-lancamento">
@@ -45,7 +42,7 @@ export async function montarTela(container, contexto) {
                         <input type="date" id="lancamento-data" required>
                     </div>
                     <div class="form-group">
-                        <label for="lancamento-historico">Histórico</label>
+                        <label for="lancamento-historico">Título</label>
                         <input type="text" id="lancamento-historico" required>
                     </div>
                     <div class="form-group">
@@ -128,39 +125,37 @@ export async function montarTela(container, contexto) {
     }
 
     function renderizar() {
-        const tbody = container.querySelector('#lancamentos-body');
+        const lista = container.querySelector('#lancamentos-lista');
         if (!lancamentos.length) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center">Nenhum lançamento encontrado.</td></tr>';
+            lista.innerHTML = '<p class="text-center text-muted">Nenhum lançamento encontrado.</p>';
             return;
         }
 
-        tbody.innerHTML = lancamentos.map(l => {
+        lista.innerHTML = lancamentos.map(l => {
             const podeEditar = contexto.perfil.papel === 'admin' || l.usuario_id === contexto.perfil.id;
-            const acoes = podeEditar
-                ? `<button class="btn-secondary" data-editar="${l.id}">Editar</button>
-                   <button class="btn-danger" data-excluir="${l.id}">Excluir</button>`
-                : '<span class="text-muted">—</span>';
-            const comprovante = l.comprovante_url
-                ? `<button class="btn-secondary" data-ver-comprovante="${escapeHtml(l.comprovante_url)}">Ver</button>`
-                : '<span class="text-muted">—</span>';
+            const tipoClasse = l.tipo === 'RECEITA' ? 'tipo-receita' : 'tipo-despesa';
+            const acoes = `
+                ${l.comprovante_url ? `<button class="btn-icon" data-ver-comprovante="${escapeHtml(l.comprovante_url)}" title="Ver comprovante">📎</button>` : ''}
+                ${podeEditar ? `<button class="btn-icon" data-editar="${l.id}" title="Editar">✏️</button>
+                                <button class="btn-icon icon-danger" data-excluir="${l.id}" title="Excluir">🗑️</button>` : ''}
+            `;
 
-            return `<tr>
-                <td>${formatarData(l.data)}</td>
-                <td><span class="badge ${l.tipo === 'RECEITA' ? 'badge-receita' : 'badge-despesa'}">${l.tipo === 'RECEITA' ? 'Receita' : 'Despesa'}</span></td>
-                <td>${escapeHtml(l.contas?.nome ?? '—')}</td>
-                <td>${escapeHtml(l.historico)}</td>
-                <td>${escapeHtml(l.perfis?.nome ?? '—')}</td>
-                <td><strong>${formatarMoeda(l.valor)}</strong></td>
-                <td>${comprovante}</td>
-                <td>${acoes}</td>
-            </tr>`;
+            return `<div class="list-card ${tipoClasse}">
+                <div class="list-card-main">
+                    <span class="badge ${l.tipo === 'RECEITA' ? 'badge-receita' : 'badge-despesa'}" style="width:fit-content;">${l.tipo === 'RECEITA' ? 'Receita' : 'Despesa'}</span>
+                    <span class="list-card-titulo">${escapeHtml(l.historico)}</span>
+                    <span class="list-card-sub">${formatarData(l.data)} · ${escapeHtml(l.contas?.nome ?? '—')} · ${escapeHtml(l.perfis?.nome ?? '—')}</span>
+                </div>
+                <div class="list-card-valor" style="color:${l.tipo === 'RECEITA' ? 'var(--cor-receita)' : 'var(--cor-despesa)'};">${formatarMoeda(l.valor)}</div>
+                <div class="list-card-acoes">${acoes}</div>
+            </div>`;
         }).join('');
 
-        tbody.querySelectorAll('[data-editar]').forEach(btn =>
+        lista.querySelectorAll('[data-editar]').forEach(btn =>
             btn.addEventListener('click', () => abrirModal(lancamentos.find(l => l.id === Number(btn.dataset.editar)))));
-        tbody.querySelectorAll('[data-excluir]').forEach(btn =>
+        lista.querySelectorAll('[data-excluir]').forEach(btn =>
             btn.addEventListener('click', () => excluirLancamento(Number(btn.dataset.excluir))));
-        tbody.querySelectorAll('[data-ver-comprovante]').forEach(btn =>
+        lista.querySelectorAll('[data-ver-comprovante]').forEach(btn =>
             btn.addEventListener('click', () => abrirComprovante(btn.dataset.verComprovante)));
     }
 

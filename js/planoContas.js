@@ -95,10 +95,10 @@ export async function montarTela(container) {
                         <span class="badge" style="background:transparent; border:1px solid ${cor}; color:${cor};">
                             ${grupo.contas.length} ${grupo.contas.length === 1 ? 'conta' : 'contas'}
                         </span>
-                        <div style="margin-left:auto; display:flex; gap:0.4rem;">
+                        <div style="margin-left:auto; display:flex; gap:0.25rem; align-items:center;">
                             <button class="btn-secondary" data-nova-conta="${grupo.id}">+ Conta</button>
-                            <button class="btn-secondary" data-editar-grupo="${grupo.id}">Editar</button>
-                            <button class="btn-danger" data-excluir-grupo="${grupo.id}">Excluir</button>
+                            <button class="btn-icon" data-editar-grupo="${grupo.id}" title="Editar grupo">✏️</button>
+                            <button class="btn-icon icon-danger" data-excluir-grupo="${grupo.id}" title="Excluir grupo">🗑️</button>
                         </div>
                     </div>
                     ${grupo.contas.length === 0
@@ -106,9 +106,9 @@ export async function montarTela(container) {
                         : grupo.contas.map(conta => `
                             <div style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem 1rem; border-top:1px solid var(--cor-borda);">
                                 <span>${escapeHtml(conta.nome)}</span>
-                                <span style="display:flex; gap:0.4rem;">
-                                    <button class="btn-secondary" data-editar-conta="${conta.id}">Editar</button>
-                                    <button class="btn-danger" data-excluir-conta="${conta.id}">Excluir</button>
+                                <span style="display:flex; gap:0.25rem;">
+                                    <button class="btn-icon" data-editar-conta="${conta.id}" title="Editar conta">✏️</button>
+                                    <button class="btn-icon icon-danger" data-excluir-conta="${conta.id}" title="Excluir conta">🗑️</button>
                                 </span>
                             </div>
                         `).join('')}
