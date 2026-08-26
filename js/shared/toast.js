@@ -11,21 +11,22 @@ function obterContainerToast() {
 
 export function mostrarToast(mensagem, tipo) {
     const cores = {
-        sucesso: { bg: '#ecfdf5', border: '#10b981', texto: '#065f46', icone: '✅' },
-        erro:    { bg: '#fef2f2', border: '#ef4444', texto: '#991b1b', icone: '⚠️' }
+        sucesso: { bg: '#17171c', borda: '#ab8ff1', texto: '#dad7de', icone: '✓', iconeCor: '#ab8ff1' },
+        erro:    { bg: '#25252d', borda: '#dad7de', texto: '#dad7de', icone: '!', iconeCor: '#dad7de' }
     };
     const cor = cores[tipo] || cores.sucesso;
 
     const container = obterContainerToast();
     const toast = document.createElement('div');
     toast.style.cssText = `
-        background:${cor.bg}; color:${cor.texto}; border-left:4px solid ${cor.border};
-        border-radius:8px; padding:0.85rem 1.1rem; box-shadow:0 4px 16px rgba(0,0,0,0.15);
+        background:${cor.bg}; color:${cor.texto}; border:1px solid ${cor.borda};
+        border-radius:3px; padding:0.85rem 1.1rem; box-shadow:rgba(0, 0, 0, 0.4) 0px 2px 4px -1.5px;
+        font-family:-apple-system, ui-sans-serif, system-ui, sans-serif;
         font-size:0.88rem; line-height:1.4; max-width:360px; display:flex; align-items:flex-start;
         gap:0.6rem; opacity:0; transform:translateX(20px); transition:opacity 0.25s ease, transform 0.25s ease;
     `;
     const icone = document.createElement('span');
-    icone.style.flexShrink = '0';
+    icone.style.cssText = `flex-shrink:0; color:${cor.iconeCor}; font-weight:600;`;
     icone.textContent = cor.icone;
     const texto = document.createElement('span');
     texto.textContent = mensagem;

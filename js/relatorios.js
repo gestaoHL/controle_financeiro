@@ -70,14 +70,14 @@ export async function montarTela(container) {
 
     function renderizarGrafico(contas, totalPorConta) {
         if (grafico) grafico.destroy();
-        const cores = ['#0f766e','#16a34a','#f59e0b','#dc2626','#6366f1','#ec4899','#0891b2','#84cc16','#8b5cf6','#f97316'];
+        const cores = ['#ab8ff1','#dad7de','#8960f0','#8b8e9c','#c7b8f5','#62626f','#6f4fc9','#25252d','#e0d6fa','#31313a'];
         grafico = new Chart(container.querySelector('#rel-grafico'), {
             type: 'doughnut',
             data: {
                 labels: contas,
-                datasets: [{ data: contas.map(c => totalPorConta[c]), backgroundColor: contas.map((_, i) => cores[i % cores.length]) }]
+                datasets: [{ data: contas.map(c => totalPorConta[c]), backgroundColor: contas.map((_, i) => cores[i % cores.length]), borderColor: '#08080a', borderWidth: 2 }]
             },
-            options: { responsive: true }
+            options: { responsive: true, plugins: { legend: { labels: { color: '#aeaac0' } } } }
         });
     }
 

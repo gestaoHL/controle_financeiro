@@ -69,7 +69,7 @@ export async function montarTela(container) {
             <div class="modal-content">
                 <h3>Conciliar transação</h3>
                 <p id="conciliar-resumo" class="text-muted"></p>
-                <input type="text" id="conciliar-busca" placeholder="Buscar lançamento por histórico..." style="width:100%; margin-bottom:0.75rem; padding:0.5rem; border:1px solid var(--cor-borda); border-radius:8px;">
+                <input type="text" id="conciliar-busca" placeholder="Buscar lançamento por histórico..." style="width:100%; margin-bottom:0.75rem;">
                 <div id="conciliar-candidatos" style="max-height:280px; overflow-y:auto;"></div>
                 <div style="display:flex; justify-content:flex-end; margin-top:1rem;">
                     <button type="button" class="btn-secondary" id="btn-cancelar-conciliar">Fechar</button>

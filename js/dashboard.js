@@ -97,11 +97,18 @@ export async function montarTela(container) {
             data: {
                 labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
                 datasets: [
-                    { label: 'Receitas', data: receitasPorMes, backgroundColor: '#16a34a' },
-                    { label: 'Despesas', data: despesasPorMes, backgroundColor: '#dc2626' }
+                    { label: 'Receitas', data: receitasPorMes, backgroundColor: '#ab8ff1' },
+                    { label: 'Despesas', data: despesasPorMes, backgroundColor: '#dad7de' }
                 ]
             },
-            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: '#8b8e9c' }, grid: { color: 'rgba(174,170,192,0.12)' } },
+                    x: { ticks: { color: '#8b8e9c' }, grid: { color: 'rgba(174,170,192,0.08)' } }
+                },
+                plugins: { legend: { labels: { color: '#aeaac0' } } }
+            }
         });
     }
 
