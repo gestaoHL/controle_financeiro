@@ -3,12 +3,13 @@ import { mostrarToast, executarComBloqueio } from './shared/toast.js';
 import { registrarHistorico } from './shared/auditoria.js';
 import { formatarMoeda, formatarData, escapeHtml } from './shared/formato.js';
 import { parseOFX, lerArquivoComoTexto } from './shared/ofxParser.js';
+import { encontrarCorrespondenciasAutomaticas } from './shared/conciliacaoAuto.js';
 
 export async function montarTela(container) {
     container.innerHTML = `
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                <h3 style="margin:0;">Contas bancárias</h3>
+            <div class="page-header">
+                <h3>Contas bancárias</h3>
                 <button class="btn-primary" id="btn-nova-conta-bancaria">+ Nova Conta Bancária</button>
             </div>
             <table class="data-table">
@@ -18,11 +19,42 @@ export async function montarTela(container) {
         </div>
 
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                <h3 style="margin:0;">Extrato importado</h3>
-                <button class="btn-primary" id="btn-importar-ofx">Importar extrato (.OFX)</button>
+            <div class="page-header">
+                <h3>Extrato importado</h3>
+                <div style="display:flex; gap:0.5rem;">
+                    <button class="btn-secondary" id="btn-auto-conciliar">Auto-conciliar</button>
+                    <button class="btn-primary" id="btn-importar-ofx">Importar extrato (.OFX)</button>
+                </div>
             </div>
-            <select id="filtro-conta-bancaria" style="margin-bottom:1rem;"><option value="">Todas as contas</option></select>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin-bottom:1rem;">
+                <div class="summary-card" style="border-top:4px solid var(--cor-receita); margin-bottom:0;">
+                    <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase;">Créditos no extrato</div>
+                    <div id="resumo-creditos" style="font-weight:800; margin-top:0.35rem;">—</div>
+                </div>
+                <div class="summary-card" style="border-top:4px solid var(--cor-despesa); margin-bottom:0;">
+                    <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase;">Débitos no extrato</div>
+                    <div id="resumo-debitos" style="font-weight:800; margin-top:0.35rem;">—</div>
+                </div>
+                <div class="summary-card" style="border-top:4px solid var(--cor-primaria); margin-bottom:0;">
+                    <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase;">Conciliados</div>
+                    <div id="resumo-conciliados" style="font-weight:800; margin-top:0.35rem;">—</div>
+                </div>
+                <div class="summary-card" style="border-top:4px solid var(--color-warning); margin-bottom:0;">
+                    <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase;">Pendentes</div>
+                    <div id="resumo-pendentes" style="font-weight:800; margin-top:0.35rem;">—</div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:0.75rem; margin-bottom:1rem; flex-wrap:wrap;">
+                <select id="filtro-conta-bancaria"><option value="">Todas as contas</option></select>
+                <select id="filtro-status-extrato">
+                    <option value="pendente">Pendentes</option>
+                    <option value="conciliado">Conciliados</option>
+                    <option value="">Todos</option>
+                </select>
+            </div>
+
             <table class="data-table">
                 <thead><tr><th>Conta</th><th>Data</th><th>Histórico</th><th>Tipo</th><th>Valor</th><th>Status</th><th></th></tr></thead>
                 <tbody id="extrato-body"><tr><td colspan="7" class="text-center">Carregando...</td></tr></tbody>
@@ -132,13 +164,56 @@ export async function montarTela(container) {
         renderizarExtrato();
     }
 
+    function itensFiltrados() {
+        const status = container.querySelector('#filtro-status-extrato').value;
+        return status ? extratoItens.filter(it => it.status === status) : extratoItens;
+    }
+
+    function atualizarResumo() {
+        const creditos = extratoItens.filter(it => it.tipo === 'CREDITO').reduce((s, it) => s + it.valor, 0);
+        const debitos = extratoItens.filter(it => it.tipo === 'DEBITO').reduce((s, it) => s + it.valor, 0);
+        const conciliados = extratoItens.filter(it => it.status === 'conciliado').length;
+        const pendentes = extratoItens.filter(it => it.status === 'pendente').length;
+
+        container.querySelector('#resumo-creditos').textContent = formatarMoeda(creditos);
+        container.querySelector('#resumo-debitos').textContent = formatarMoeda(debitos);
+        container.querySelector('#resumo-conciliados').textContent = String(conciliados);
+        container.querySelector('#resumo-pendentes').textContent = String(pendentes);
+    }
+
+    async function executarAutoConciliar() {
+        const { data: lancamentosDisponiveis, error: erroLanc } = await supabase
+            .from('lancamentos').select('id, tipo, valor, data').is('conta_bancaria_id', null);
+        if (erroLanc) { mostrarToast('Erro ao buscar lançamentos: ' + erroLanc.message, 'erro'); return; }
+
+        const pendentes = extratoItens.filter(it => it.status === 'pendente');
+        const correspondencias = encontrarCorrespondenciasAutomaticas(pendentes, lancamentosDisponiveis);
+
+        if (!correspondencias.length) { mostrarToast('Nenhuma correspondência automática encontrada.', 'sucesso'); return; }
+
+        let sucesso = 0;
+        for (const { itemId, lancamentoId } of correspondencias) {
+            const { error } = await supabase.rpc('conciliar_extrato', { p_item_id: itemId, p_lancamento_id: lancamentoId });
+            if (!error) {
+                sucesso++;
+                await registrarHistorico('Conciliação Bancária', 'CONCILIAÇÃO', `Item de extrato #${itemId} conciliado automaticamente com lançamento #${lancamentoId}`);
+            }
+        }
+
+        mostrarToast(`${sucesso} de ${correspondencias.length} transação(ões) conciliada(s) automaticamente.`, 'sucesso');
+        await carregarExtrato();
+    }
+
     function renderizarExtrato() {
+        atualizarResumo();
+        const lista = itensFiltrados();
+
         const tbody = container.querySelector('#extrato-body');
-        if (!extratoItens.length) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">Nenhum item de extrato. Importe um arquivo .OFX para começar.</td></tr>';
+        if (!lista.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">Nenhum item de extrato para este filtro.</td></tr>';
             return;
         }
-        tbody.innerHTML = extratoItens.map(it => {
+        tbody.innerHTML = lista.map(it => {
             const badgeStatus = it.status === 'conciliado'
                 ? '<span class="badge badge-aprovado">Conciliado</span>'
                 : '<span class="badge badge-pendente">Pendente</span>';
@@ -301,6 +376,8 @@ export async function montarTela(container) {
     });
 
     container.querySelector('#filtro-conta-bancaria').addEventListener('change', carregarExtrato);
+    container.querySelector('#filtro-status-extrato').addEventListener('change', renderizarExtrato);
+    container.querySelector('#btn-auto-conciliar').addEventListener('click', executarAutoConciliar);
     container.querySelector('#btn-cancelar-conciliar').addEventListener('click', () =>
         container.querySelector('#modal-conciliar').classList.remove('show'));
     container.querySelector('#conciliar-busca').addEventListener('input', e => renderizarCandidatos(e.target.value));
