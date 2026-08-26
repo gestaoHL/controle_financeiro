@@ -1,23 +1,27 @@
 :root {
-    --color-primary: #0369a1;
-    --color-primary-dark: #075985;
-    --color-sidebar: #0c4a6e;
-    --color-sidebar-hover: #075985;
-    --color-accent-gold: #f5b700;
+    /* Paleta oficial MDB (mdb.org.br) — extraída do kit de cores do site */
+    --color-primary: #0A9246;
+    --color-primary-dark: #12793F;
+    --color-sidebar: #141414;
+    --color-sidebar-hover: #12793F;
+    --color-accent: #FFBC7D;
     --color-success: #10b981;
     --color-danger: #ef4444;
     --color-warning: #f59e0b;
     --color-bg: #e8eaed;
     --color-white: #ffffff;
     --color-dark: #212121;
-    --color-gray: #6b7280;
+    --color-gray: #4F4F4F;
     --color-border: #d9d9d9;
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     --radius: 8px;
 
+    --font-display: 'Montserrat', system-ui, -apple-system, sans-serif;
+    --font-body: 'Roboto', system-ui, -apple-system, sans-serif;
+
     --cor-primaria: var(--color-primary);
     --cor-primaria-escura: var(--color-primary-dark);
-    --cor-primaria-clara: #e0f2fe;
+    --cor-primaria-clara: #e3f5ea;
     --cor-receita: var(--color-success);
     --cor-despesa: var(--color-danger);
     --cor-fundo: var(--color-bg);
@@ -33,10 +37,12 @@
 
 body {
     margin: 0;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-body);
     background: var(--cor-fundo);
     color: var(--cor-texto);
 }
+
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
 
 .app-container { display: flex; min-height: 100vh; }
 
@@ -52,7 +58,7 @@ body {
 .sidebar-header {
     padding: 1.5rem 1.25rem;
     border-bottom: 3px solid;
-    border-image: linear-gradient(90deg, var(--color-accent-gold), var(--color-sidebar-hover)) 1;
+    border-image: linear-gradient(90deg, var(--color-accent), var(--color-primary)) 1;
 }
 .sidebar-header h2 { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.25); }
 
@@ -68,7 +74,7 @@ body {
 }
 
 .nav-link:hover { background: var(--color-sidebar-hover); }
-.nav-link.active { background: var(--color-sidebar-hover); border-left-color: var(--color-success); color: #fff; font-weight: 600; }
+.nav-link.active { background: var(--color-sidebar-hover); border-left-color: var(--color-accent); color: #fff; font-weight: 600; }
 
 .sidebar-footer { padding: 1rem 1.25rem; border-top: 1px solid rgba(255,255,255,0.15); }
 .user-name { display: block; font-size: 0.85rem; margin-bottom: 0.5rem; }

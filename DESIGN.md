@@ -1,23 +1,27 @@
 # Design system — Finanças HL
 
-Light theme ported from the visual language of "Projeto Controle
-Financeiro", with its black primary/sidebar swapped for a light-blue
-family. Everything else (gold accent, success/danger/warning colors,
-neutral background) is kept as in that reference.
+Palette and typography sourced from the official MDB (Movimento
+Democrático Brasileiro) website, https://www.mdb.org.br/ — colors
+extracted from that site's published Elementor color kit
+(`--e-global-color-*`), fonts from its Google Fonts includes
+(Montserrat + Roboto).
 
 ## Tokens (`css/styles.css` `:root`)
 
 | Token | Value | Use |
 |---|---|---|
-| `--color-primary` / `--color-primary-dark` | `#0ea5e9` / `#0284c7` | buttons, links, active states |
-| `--color-sidebar` / `--color-sidebar-hover` | `#0ea5e9` / `#0284c7` | sidebar background |
-| `--color-accent-gold` | `#f5b700` | sidebar logo, header underline |
+| `--color-primary` | `#0A9246` | MDB green — buttons, links, active states |
+| `--color-primary-dark` | `#12793F` | MDB dark green — hover states, gradients |
+| `--color-sidebar` / `--color-sidebar-hover` | `#141414` / `#12793F` | sidebar background |
+| `--color-accent` | `#FFBC7D` | sidebar logo underline, active nav indicator |
 | `--color-success` | `#10b981` | receitas, aprovado badges |
 | `--color-danger` | `#ef4444` | despesas, exclusão |
 | `--color-warning` | `#f59e0b` | pendente badges |
 | `--color-bg` | `#e8eaed` | page background |
 | `--color-border` | `#d9d9d9` | borders |
 | `--radius` | `8px` | corners |
+| `--font-display` | `'Montserrat', system-ui, sans-serif` | headings, sidebar title, page titles |
+| `--font-body` | `'Roboto', system-ui, sans-serif` | body text |
 
 Screen code keeps using the older `--cor-*` aliases (`--cor-primaria`,
 `--cor-receita`, `--cor-despesa`, `--cor-fundo`, `--cor-superficie`,
@@ -27,10 +31,15 @@ Screen code keeps using the older `--cor-*` aliases (`--cor-primaria`,
 
 ## Components
 
-- Buttons are solid fills: `.btn-primary` (blue/white), `.btn-secondary`
+- Buttons are solid fills: `.btn-primary` (green/white), `.btn-secondary`
   (gray/white), `.btn-danger` (red/white).
 - Badges are solid tinted pills with a 4px radius (`.badge-receita`,
   `.badge-despesa`, `.badge-pendente`, `.badge-aprovado`, and the
   ação-specific `.badge-acao-*` set used by Histórico).
 - `.page-header` is the shared title + right-aligned actions row used
   at the top of most screens.
+- `.card-premium` / `.premium-grid` are the gradient/icon stat cards
+  used on Dashboard and Conciliação (see `.bg-gradient-primary`,
+  `.border-success|danger|warning|info|purple`).
+- `.list-card` / `.btn-icon` are the card-list rows (Lançamentos,
+  Contas Bancárias) with icon-only edit/delete actions.
