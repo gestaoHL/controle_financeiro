@@ -20,3 +20,17 @@ const ENTIDADES_HTML = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', 
 export function escapeHtml(valor) {
     return String(valor ?? '').replace(/[&<>"']/g, c => ENTIDADES_HTML[c]);
 }
+
+const CLASSES_ACAO = {
+    'INSERÇÃO': 'badge-acao-inserir',
+    'EDIÇÃO': 'badge-acao-editar',
+    'EXCLUSÃO': 'badge-acao-excluir',
+    'IMPORTAÇÃO': 'badge-acao-importacao',
+    'CONCILIAÇÃO': 'badge-acao-conciliacao',
+    'DESCONCILIAÇÃO': 'badge-acao-conciliacao',
+    'APROVAÇÃO': 'badge-acao-conciliacao'
+};
+
+export function classeParaAcao(acao) {
+    return CLASSES_ACAO[acao] ?? 'badge-acao-outro';
+}

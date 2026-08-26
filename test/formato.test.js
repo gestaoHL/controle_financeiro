@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatarMoeda, formatarData, formatarDataHora, escapeHtml } from '../js/shared/formato.js';
+import { formatarMoeda, formatarData, formatarDataHora, escapeHtml, classeParaAcao } from '../js/shared/formato.js';
 
 test('formatarMoeda formats BRL currency', () => {
     assert.equal(formatarMoeda(1234.5), 'R$ 1.234,50');
@@ -30,4 +30,18 @@ test('escapeHtml passes through a safe string unchanged', () => {
 test('escapeHtml treats null/undefined as an empty string', () => {
     assert.equal(escapeHtml(null), '');
     assert.equal(escapeHtml(undefined), '');
+});
+
+test('classeParaAcao mapeia cada tipo de ação conhecido para sua classe de badge', () => {
+    assert.equal(classeParaAcao('INSERÇÃO'), 'badge-acao-inserir');
+    assert.equal(classeParaAcao('EDIÇÃO'), 'badge-acao-editar');
+    assert.equal(classeParaAcao('EXCLUSÃO'), 'badge-acao-excluir');
+    assert.equal(classeParaAcao('IMPORTAÇÃO'), 'badge-acao-importacao');
+    assert.equal(classeParaAcao('CONCILIAÇÃO'), 'badge-acao-conciliacao');
+    assert.equal(classeParaAcao('DESCONCILIAÇÃO'), 'badge-acao-conciliacao');
+    assert.equal(classeParaAcao('APROVAÇÃO'), 'badge-acao-conciliacao');
+});
+
+test('classeParaAcao retorna uma classe neutra para ações desconhecidas', () => {
+    assert.equal(classeParaAcao('ALGO_NOVO'), 'badge-acao-outro');
 });
