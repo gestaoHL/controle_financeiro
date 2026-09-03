@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Missão Netuno — Projeto Paideia K5</title>
+<meta name="description" content="Uma missão espacial interativa até Netuno: história narrada, jogos, páginas de colorir e certificado de astronauta.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --space-950:#050A18;
+    --space-900:#0C1B3A;
+    --navy:#10315C;
+    --neptune:#2E86AB;
+    --neptune-light:#7FD1E8;
+    --neptune-deep:#1B5A80;
+    --gold:#E9B44C;
+    --coral:#F1785A;
+    --grape:#8E6BB0;
+    --mint:#4CAF7D;
+    --cream:#FBF3E3;
+    --paper:#FFFDF8;
+    --sky:#EAF4FA;
+    --ink:#2B2E33;
+    --ink-soft:#565B66;
+    --line:#E4D9BF;
+    --r-lg:28px; --r-md:18px; --r-sm:10px;
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; font-family:'Nunito',system-ui,sans-serif; color:var(--ink);
+    background:var(--paper); overflow-x:hidden;
+  }
+  h1,h2,h3{font-family:'Baloo 2',system-ui,sans-serif; margin:0; color:var(--navy); line-height:1.15;}
+  p{margin:0 0 .8em; line-height:1.65;}
+  img,svg{display:block; max-width:100%;}
+  button{font-family:inherit; cursor:pointer;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important;}
+  }
+
+  /* ============ ONBOARDING ============ */
+  #onboard{
+    position:fixed; inset:0; z-index:200;
+    background:radial-gradient(ellipse at 50% 40%, #16305F 0%, var(--space-900) 50%, var(--space-950) 100%);
+    display:flex; align-items:center; justify-content:center; padding:24px;
+    transition:opacity .6s;
+  }
+  #onboard.gone{opacity:0; pointer-events:none;}
+  .ob-card{text-align:center; max-width:460px; width:100%;}
+  .ob-rocket{width:110px; margin:0 auto 18px; animation:hover 2.6s ease-in-out infinite;}
+  @keyframes hover{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+  .ob-card h1{color:#fff; font-size:clamp(1.8rem,6vw,2.6rem); margin-bottom:8px;}
+  .ob-card p{color:#B9CBE0; font-size:1rem;}
+  .ob-input{
+    width:100%; padding:16px 20px; border-radius:999px; border:3px solid var(--neptune-light);
+    background:rgba(255,255,255,.95); font-family:'Baloo 2'; font-size:1.2rem; font-weight:700;
+    color:var(--navy); text-align:center; margin:16px 0 14px; outline:none;
+  }
+  .ob-input:focus{border-color:var(--gold);}
+  .btn-big{
+    background:linear-gradient(180deg,var(--gold),#D89B32); color:#3A2A08; border:none;
+    border-radius:999px; padding:16px 34px; font-family:'Baloo 2'; font-weight:800; font-size:1.15rem;
+    box-shadow:0 6px 0 #A9761F; transition:transform .12s, box-shadow .12s;
+  }
+  .btn-big:active{transform:translateY(4px); box-shadow:0 2px 0 #A9761F;}
+  .ob-skip{
+    display:block; margin:16px auto 0; background:none; border:none;
+    color:#8EA0BC; font-weight:700; font-size:.9rem; text-decoration:underline;
+  }
+  /* countdown */
+  #countdown{
+    position:fixed; inset:0; z-index:210; display:none;
+    align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at 50% 50%, #16305F, var(--space-950));
+  }
+  #countdown.on{display:flex;}
+  .cd-num{
+    font-family:'Baloo 2'; font-weight:800; font-size:clamp(6rem,26vw,14rem);
+    color:#fff; text-shadow:0 0 60px var(--neptune-light);
+    animation:cdPop .9s ease-out;
+  }
+  @keyframes cdPop{0%{transform:scale(.3); opacity:0;}40%{transform:scale(1.15); opacity:1;}100%{transform:scale(1); opacity:1;}}
+  .cd-go{font-size:clamp(2.6rem,12vw,6rem); color:var(--gold);}
+  .cd-streak{position:absolute; width:2px; background:linear-gradient(transparent,var(--neptune-light),transparent);}
+
+  /* ============ NAV ============ */
+  .navbar{
+    position:sticky; top:0; z-index:60;
+    background:rgba(5,10,24,.9); backdrop-filter:blur(8px);
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .navbar .wrap{display:flex; align-items:center; gap:9px; padding:9px 24px; overflow-x:auto; scrollbar-width:none;}
+  .navbar .wrap::-webkit-scrollbar{display:none;}
+  .nav-brand{font-family:'Baloo 2'; color:var(--gold); font-weight:700; font-size:.98rem; white-space:nowrap; margin-right:4px; flex-shrink:0;}
+  .nav-link{
+    flex-shrink:0; color:#EAF2FA; text-decoration:none; font-weight:700; font-size:.83rem;
+    padding:7px 13px; border-radius:999px; border:1px solid rgba(255,255,255,.16); white-space:nowrap;
+    transition:background .2s;
+  }
+  .nav-link:hover{background:rgba(255,255,255,.14);}
+  .sound-toggle{
+    flex-shrink:0; margin-left:auto; background:rgba(233,180,76,.18); border:1px solid rgba(233,180,76,.45);
+    color:var(--gold); border-radius:999px; padding:7px 13px; font-weight:800; font-size:.83rem; white-space:nowrap;
+  }
+
+  /* ============ HERO ============ */
+  .hero{
+    position:relative; min-height:94svh;
+    background:radial-gradient(ellipse at 50% 15%, #14285A 0%, var(--space-900) 45%, var(--space-950) 100%);
+    display:flex; align-items:center; justify-content:center; padding:60px 24px 50px; overflow:hidden;
+  }
+  .stars{position:absolute; inset:0; pointer-events:none;}
+  .star{position:absolute; border-radius:50%; background:#fff; animation:twinkle 3.2s ease-in-out infinite;}
+  @keyframes twinkle{0%,100%{opacity:.15; transform:scale(1);}50%{opacity:.95; transform:scale(1.7);}}
+  .hero-inner{position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:20px; text-align:center; max-width:720px;}
+  .eyebrow-badge{
+    display:inline-flex; align-items:center; gap:8px; background:rgba(233,180,76,.14);
+    border:1px solid rgba(233,180,76,.4); color:var(--gold); padding:7px 16px; border-radius:999px;
+    font-weight:700; font-size:.8rem;
+  }
+  .hero h1{font-size:clamp(2.8rem,9vw,5.6rem); color:#fff; text-shadow:0 0 40px rgba(127,209,232,.35);}
+  .hero .sub{color:var(--neptune-light); font-family:'Baloo 2'; font-size:clamp(1rem,3vw,1.4rem); font-weight:600;}
+  .hero p.lead{color:#C9D9EC; font-size:1.02rem; max-width:56ch;}
+
+  .planet-stage{position:relative; width:min(280px,58vw); height:min(280px,58vw); margin:4px auto 0; cursor:pointer;}
+  .ring-orbit{position:absolute; inset:-28%; border:2px dashed rgba(127,209,232,.26); border-radius:50%; transform:rotate(-18deg);}
+  .moon-pivot{position:absolute; inset:0; animation:spin 9s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .moon{position:absolute; top:2%; left:50%; width:16px; height:16px; margin-left:-8px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #E6EAF0, #9AA6B4 70%); box-shadow:0 0 10px rgba(255,255,255,.5);}
+  .planet{
+    position:absolute; inset:0; margin:auto; width:78%; height:78%; border-radius:50%;
+    background:radial-gradient(circle at 32% 28%, var(--neptune-light) 0%, var(--neptune) 45%, var(--neptune-deep) 78%, #103A55 100%);
+    box-shadow:0 0 60px rgba(46,134,171,.55), inset -18px -14px 40px rgba(0,0,0,.35);
+    overflow:hidden; transition:transform .2s;
+  }
+  .planet-stage.poke .planet{animation:wobble .6s ease;}
+  @keyframes wobble{0%,100%{transform:scale(1) rotate(0);}25%{transform:scale(1.07) rotate(-3deg);}60%{transform:scale(.97) rotate(3deg);}}
+  .planet .band{position:absolute; left:-10%; width:120%; border-radius:50%; opacity:.28; background:#fff;}
+  .band1{height:16%; top:22%; transform:rotate(-6deg);}
+  .band2{height:10%; top:52%; transform:rotate(4deg); opacity:.18;}
+  .band3{height:8%; top:68%; transform:rotate(-3deg); opacity:.22;}
+  .dark-spot{position:absolute; width:26%; height:16%; top:36%; left:20%; background:rgba(10,30,45,.35); border-radius:50%; filter:blur(1px);}
+  .poke-hint{
+    position:absolute; bottom:-6px; left:50%; transform:translateX(-50%);
+    background:rgba(255,255,255,.92); color:var(--navy); font-family:'Baloo 2'; font-weight:700;
+    font-size:.78rem; padding:5px 12px; border-radius:999px; white-space:nowrap;
+    animation:pulseHint 2.4s ease-in-out infinite;
+  }
+  @keyframes pulseHint{0%,100%{transform:translateX(-50%) scale(1);}50%{transform:translateX(-50%) scale(1.08);}}
+
+  .mascot-row{display:flex; align-items:flex-end; gap:12px; margin-top:4px;}
+  .mascot{width:60px; height:60px; flex-shrink:0;}
+  .mascot .tail{animation:wag 2.4s ease-in-out infinite; transform-origin:55px 55px;}
+  @keyframes wag{0%,100%{transform:rotate(0);}50%{transform:rotate(9deg);}}
+  .bubble{
+    background:#fff; border:2px solid var(--navy); border-radius:16px; padding:10px 15px;
+    font-family:'Baloo 2'; font-weight:600; color:var(--navy); font-size:.9rem;
+    position:relative; max-width:290px; text-align:left; min-height:20px;
+  }
+  .bubble:after{content:""; position:absolute; left:-10px; bottom:14px; border:8px solid transparent; border-right-color:var(--navy);}
+  .bubble:before{content:""; position:absolute; left:-7px; bottom:15px; border:7px solid transparent; border-right-color:#fff; z-index:1;}
+
+  /* ============ SECTIONS ============ */
+  section{padding:74px 0;}
+  .section-cream{background:var(--cream);}
+  .section-sky{background:var(--sky);}
+  .section-dark{background:radial-gradient(ellipse at 50% 0%, #133056, var(--space-950)); color:#EAF2FA;}
+  .section-dark h2,.section-dark h3{color:#fff;}
+  .kicker{display:inline-block; color:var(--coral); font-weight:800; font-family:'Baloo 2'; font-size:.92rem; margin-bottom:6px;}
+  .section-head{max-width:640px; margin:0 auto 40px; text-align:center;}
+  .section-head h2{font-size:clamp(1.7rem,4vw,2.5rem);}
+  .section-head p{margin:12px auto 0; color:var(--ink-soft); max-width:56ch;}
+  .section-dark .section-head p{color:#B9CBE0;}
+
+  /* listen button */
+  .listen{
+    display:inline-flex; align-items:center; gap:7px; background:var(--neptune); color:#fff;
+    border:none; border-radius:999px; padding:9px 18px; font-family:'Baloo 2'; font-weight:800; font-size:.9rem;
+    box-shadow:0 4px 0 var(--neptune-deep); transition:transform .12s, box-shadow .12s;
+  }
+  .listen:active{transform:translateY(3px); box-shadow:0 1px 0 var(--neptune-deep);}
+  .listen.speaking{background:var(--coral); box-shadow:0 4px 0 #C1543A;}
+  .listen-sm{padding:6px 13px; font-size:.8rem; box-shadow:0 3px 0 var(--neptune-deep);}
+
+  /* ============ FACTS ============ */
+  .facts-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
+  .fact-card{
+    background:var(--paper); border:1px solid var(--line); border-radius:var(--r-md);
+    padding:24px 16px; text-align:center; box-shadow:0 10px 24px rgba(16,49,92,.06);
+    cursor:pointer; transition:transform .18s;
+  }
+  .fact-card:hover{transform:translateY(-4px);}
+  .fact-icon{font-size:1.7rem; margin-bottom:6px;}
+  .fact-num{font-family:'Baloo 2'; font-weight:800; font-size:2rem; color:var(--neptune-deep);}
+  .fact-label{font-size:.87rem; color:var(--ink-soft); font-weight:700; margin-top:4px;}
+
+  /* ============ STORY ============ */
+  .story-shell{
+    max-width:760px; margin:0 auto; background:var(--paper); border-radius:var(--r-lg);
+    border:1px solid var(--line); box-shadow:0 24px 50px rgba(16,49,92,.12); overflow:hidden;
+  }
+  .story-viewport{position:relative; min-height:400px;}
+  .story-page{display:none; padding:30px 28px 18px; text-align:center; animation:fadeIn .5s ease;}
+  .story-page.active{display:block;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(8px);}to{opacity:1; transform:translateY(0);}}
+  .story-art{width:170px; height:170px; margin:0 auto 16px;}
+  .story-text{font-family:'Baloo 2'; font-weight:600; font-size:1.18rem; color:var(--navy); max-width:44ch; margin:0 auto 14px;}
+  .story-controls{display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-top:1px solid var(--line); background:#F6EFDD; gap:10px;}
+  .story-btn{
+    background:var(--neptune); color:#fff; border:none; border-radius:999px; padding:10px 18px;
+    font-weight:800; font-family:'Baloo 2'; font-size:.92rem;
+    box-shadow:0 4px 0 var(--neptune-deep); transition:transform .12s, box-shadow .12s;
+  }
+  .story-btn:active{transform:translateY(3px); box-shadow:0 1px 0 var(--neptune-deep);}
+  .story-btn:disabled{opacity:.3; box-shadow:none; cursor:default;}
+  .story-dots{display:flex; gap:6px;}
+  .story-dot{width:9px; height:9px; border-radius:50%; background:#D8CBA6; border:none; padding:0;}
+  .story-dot.active{background:var(--coral); width:22px; border-radius:6px;}
+
+  /* ============ CURIOSIDADES ============ */
+  .curio-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:15px;}
+  .flip-card{perspective:1200px; height:180px;}
+  .flip-inner{position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:transform .5s;}
+  .flip-card.flipped .flip-inner{transform:rotateY(180deg);}
+  .flip-face{
+    position:absolute; inset:0; backface-visibility:hidden; border-radius:var(--r-md);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:15px; gap:7px; cursor:pointer; border:1px solid var(--line);
+  }
+  .flip-front{background:var(--paper); box-shadow:0 8px 20px rgba(16,49,92,.08);}
+  .flip-front .emoji{font-size:1.7rem;}
+  .flip-front .t{font-family:'Baloo 2'; font-weight:700; color:var(--navy); font-size:.97rem;}
+  .flip-back{background:var(--neptune-deep); color:#fff; transform:rotateY(180deg); font-size:.85rem; line-height:1.5;}
+  .tap-hint{font-size:.7rem; color:var(--ink-soft); opacity:.75;}
+
+  /* ============ COLORIR ============ */
+  .color-tabs{display:flex; gap:9px; justify-content:center; margin-bottom:22px; flex-wrap:wrap;}
+  .color-tab{
+    border:2px solid var(--neptune); background:#fff; color:var(--neptune-deep);
+    border-radius:999px; padding:9px 17px; font-weight:800; font-family:'Baloo 2'; font-size:.9rem;
+  }
+  .color-tab.active{background:var(--neptune); color:#fff;}
+  .color-panel{display:none;}
+  .color-panel.active{display:block;}
+  .color-layout{display:grid; grid-template-columns:1fr 220px; gap:26px; align-items:start;}
+  .coloring-canvas{background:#fff; border-radius:var(--r-lg); border:1px solid var(--line); box-shadow:0 14px 34px rgba(16,49,92,.1); padding:12px;}
+  .colorable{cursor:pointer; transition:fill .1s;}
+  .palette-box{background:var(--paper); border:1px solid var(--line); border-radius:var(--r-md); padding:16px; position:sticky; top:76px;}
+  .palette-box h3{font-size:.98rem; margin-bottom:10px;}
+  .swatches{display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-bottom:14px;}
+  .swatch{width:100%; aspect-ratio:1; border-radius:50%; border:2px solid rgba(0,0,0,.08); cursor:pointer; transition:transform .15s;}
+  .swatch.selected{border:3px solid var(--navy); transform:scale(1.14);}
+  .tool-btn{
+    width:100%; padding:10px; border-radius:999px; border:1px solid var(--line); background:#fff;
+    font-weight:800; font-family:'Baloo 2'; font-size:.85rem; margin-bottom:7px; color:var(--navy);
+  }
+  .tool-btn.primary{background:var(--coral); color:#fff; border:none;}
+
+  /* ============ BRINCAR ============ */
+  .play-grid{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+  .play-card{background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.14); border-radius:var(--r-lg); padding:24px;}
+  .play-card h3{color:#fff; margin-bottom:6px; font-size:1.15rem;}
+  .play-card p{color:#B9CBE0; font-size:.9rem;}
+  input[type=range]{width:100%; margin:16px 0 8px; accent-color:var(--gold);}
+  .wind-readout{font-family:'Baloo 2'; font-weight:800; color:var(--gold); font-size:1.35rem;}
+  .wind-compare{font-size:.83rem; color:#B9CBE0; min-height:2.4em;}
+  .windsock-wrap{display:flex; justify-content:center; margin:12px 0;}
+  .size-compare{display:flex; align-items:flex-end; justify-content:center; gap:28px; min-height:150px; margin:14px 0 4px;}
+  .size-circle{border-radius:50%; transition:width .5s, height .5s;}
+  .earth-circle{background:radial-gradient(circle at 35% 30%, #7FC8E8, #2E6DA4 70%);}
+  .neptune-circle{background:radial-gradient(circle at 35% 30%, var(--neptune-light), var(--neptune-deep) 75%);}
+  .size-label{text-align:center; font-size:.8rem; color:#B9CBE0; margin-top:6px;}
+  .toggle-row{display:flex; gap:9px; margin-top:12px; flex-wrap:wrap;}
+  .toggle-btn{
+    flex:1; min-width:110px; padding:9px; border-radius:999px; border:1px solid rgba(255,255,255,.3);
+    background:transparent; color:#fff; font-weight:800; font-family:'Baloo 2'; font-size:.8rem;
+  }
+  .toggle-btn.active{background:var(--gold); color:var(--space-950); border-color:var(--gold);}
+  .big-answer{
+    font-family:'Baloo 2'; font-weight:800; color:var(--gold); font-size:1.5rem; margin-top:12px; line-height:1.3;
+  }
+  .answer-sub{font-size:.85rem; color:#B9CBE0;}
+
+  /* ============ JOGO SISTEMA SOLAR ============ */
+  .game-board{max-width:760px; margin:0 auto;}
+  .orbit-slots{
+    display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap;
+    background:rgba(255,255,255,.04); border:1px dashed rgba(255,255,255,.22);
+    border-radius:var(--r-lg); padding:18px 14px; min-height:104px; margin-bottom:18px;
+  }
+  .sun-chip{
+    width:52px; height:52px; border-radius:50%;
+    background:radial-gradient(circle at 35% 32%, #FFE9A8, #F5A623 65%, #E0761A);
+    box-shadow:0 0 24px rgba(245,166,35,.6); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:1.3rem;
+  }
+  .slot{
+    width:56px; height:56px; border-radius:50%; border:2px dashed rgba(255,255,255,.25);
+    display:flex; align-items:center; justify-content:center; font-size:.62rem;
+    color:rgba(255,255,255,.4); font-weight:800; font-family:'Baloo 2'; text-align:center;
+  }
+  .slot.filled{border-style:solid; border-color:transparent;}
+  .planet-chip{
+    width:56px; height:56px; border-radius:50%; border:none; color:#fff;
+    font-family:'Baloo 2'; font-weight:800; font-size:.63rem; line-height:1.1;
+    display:flex; align-items:center; justify-content:center; text-align:center; padding:3px;
+    box-shadow:0 5px 12px rgba(0,0,0,.35); transition:transform .15s;
+  }
+  .planet-chip:hover{transform:scale(1.09);}
+  .planet-chip.shake{animation:shakeX .4s;}
+  @keyframes shakeX{0%,100%{transform:translateX(0);}25%{transform:translateX(-7px);}75%{transform:translateX(7px);}}
+  .chip-tray{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:16px; min-height:60px;}
+  .game-hint{
+    text-align:center; font-family:'Baloo 2'; font-weight:700; color:var(--gold);
+    font-size:1.05rem; min-height:1.6em; margin-bottom:8px;
+  }
+  .mnemonic{text-align:center; color:#B9CBE0; font-size:.85rem;}
+
+  /* ============ QUIZ ============ */
+  .quiz-shell{
+    max-width:640px; margin:0 auto; background:var(--paper); border:1px solid var(--line);
+    border-radius:var(--r-lg); padding:30px; box-shadow:0 20px 44px rgba(16,49,92,.1);
+  }
+  .quiz-top{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px;}
+  .quiz-progress{font-family:'Baloo 2'; font-weight:700; color:var(--coral); font-size:.84rem;}
+  .quiz-q{font-family:'Baloo 2'; font-weight:700; color:var(--navy); font-size:1.18rem; margin-bottom:16px;}
+  .quiz-opt{
+    display:block; width:100%; text-align:left; padding:13px 16px; margin-bottom:9px;
+    border:2px solid var(--line); border-radius:var(--r-sm); background:#fff;
+    font-weight:700; color:var(--ink); font-size:.97rem; transition:background .15s, border-color .15s;
+  }
+  .quiz-opt:hover{border-color:var(--neptune);}
+  .quiz-opt.correct{background:#DDF3E4; border-color:#4CAF7D; color:#1E5E3B;}
+  .quiz-opt.wrong{background:#FBE2DC; border-color:var(--coral); color:#9C3A22;}
+  .quiz-feedback{font-family:'Baloo 2'; font-weight:700; margin:12px 0; min-height:26px;}
+  .quiz-nav{display:flex; justify-content:flex-end;}
+  .quiz-done{text-align:center;}
+  .quiz-done .big-emoji{font-size:3rem; margin-bottom:6px;}
+
+  /* ============ PASSAPORTE ============ */
+  .passport-fab{
+    position:fixed; right:16px; bottom:16px; z-index:80;
+    background:linear-gradient(180deg,var(--gold),#D89B32); color:#3A2A08; border:none;
+    border-radius:999px; padding:13px 20px; font-family:'Baloo 2'; font-weight:800; font-size:.92rem;
+    box-shadow:0 6px 18px rgba(0,0,0,.35); display:flex; align-items:center; gap:8px;
+  }
+  .passport-fab.pop{animation:fabPop .6s ease;}
+  @keyframes fabPop{0%,100%{transform:scale(1);}40%{transform:scale(1.22);}}
+  .passport-panel{
+    position:fixed; right:16px; bottom:76px; z-index:81; width:min(320px,calc(100vw - 32px));
+    background:var(--paper); border:2px solid var(--gold); border-radius:var(--r-lg);
+    padding:18px; box-shadow:0 20px 50px rgba(0,0,0,.4); display:none;
+  }
+  .passport-panel.open{display:block; animation:fadeIn .3s ease;}
+  .passport-panel h3{font-size:1.05rem; margin-bottom:4px;}
+  .passport-panel .who{font-size:.82rem; color:var(--ink-soft); margin-bottom:12px;}
+  .sticker-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin-bottom:12px;}
+  .sticker{
+    aspect-ratio:1; border-radius:14px; background:#EDE4CE; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; font-size:1.4rem; opacity:.32; filter:grayscale(1);
+    transition:opacity .3s, filter .3s, transform .3s;
+  }
+  .sticker.earned{opacity:1; filter:none; background:#FFF3D4; transform:scale(1);}
+  .sticker .lbl{font-size:.5rem; font-weight:800; font-family:'Baloo 2'; color:var(--navy); margin-top:2px; text-align:center; line-height:1;}
+  .passport-bar{height:9px; background:#E6DCC4; border-radius:999px; overflow:hidden; margin-bottom:8px;}
+  .passport-fill{height:100%; background:linear-gradient(90deg,var(--neptune),var(--gold)); width:0%; transition:width .5s;}
+  .passport-count{font-size:.8rem; color:var(--ink-soft); font-weight:700; text-align:center;}
+
+  /* toast */
+  .toast{
+    position:fixed; left:50%; transform:translateX(-50%) translateY(-20px); top:70px; z-index:120;
+    background:var(--navy); color:#fff; border:2px solid var(--gold); border-radius:999px;
+    padding:12px 22px; font-family:'Baloo 2'; font-weight:800; font-size:.95rem;
+    box-shadow:0 12px 30px rgba(0,0,0,.35); opacity:0; pointer-events:none; transition:opacity .35s, transform .35s;
+    display:flex; align-items:center; gap:9px; max-width:calc(100vw - 32px);
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* confetti */
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:150;}
+
+  /* ============ CERTIFICADO ============ */
+  .cert-wrap{max-width:660px; margin:0 auto;}
+  .certificate{
+    background:#FFFDF5; border:3px double var(--gold); border-radius:var(--r-lg);
+    padding:36px 30px; text-align:center; box-shadow:0 20px 44px rgba(16,49,92,.14); position:relative;
+  }
+  .cert-seal{
+    width:70px; height:70px; border-radius:50%; margin:0 auto 12px;
+    background:radial-gradient(circle at 35% 32%, var(--neptune-light), var(--neptune-deep));
+    display:flex; align-items:center; justify-content:center; font-size:1.9rem;
+    box-shadow:0 0 0 5px rgba(46,134,171,.18);
+  }
+  .cert-title{font-family:'Baloo 2'; font-weight:800; color:var(--navy); font-size:1.5rem; margin-bottom:4px;}
+  .cert-sub{color:var(--ink-soft); font-size:.9rem; margin-bottom:16px;}
+  .cert-name{
+    font-family:'Baloo 2'; font-weight:800; font-size:2rem; color:var(--neptune-deep);
+    border-bottom:2px dashed var(--line); display:inline-block; padding:0 24px 6px; margin-bottom:14px;
+    min-width:230px;
+  }
+  .cert-body{color:var(--ink); font-size:.95rem; max-width:44ch; margin:0 auto 16px;}
+  .cert-stickers{display:flex; justify-content:center; gap:9px; flex-wrap:wrap; font-size:1.5rem; margin-bottom:14px;}
+  .cert-foot{display:flex; justify-content:space-between; gap:16px; font-size:.78rem; color:var(--ink-soft); margin-top:20px; flex-wrap:wrap;}
+  .cert-locked{text-align:center; color:var(--ink-soft);}
+  .cert-locked .lock{font-size:2.4rem; margin-bottom:8px;}
+
+  /* footer */
+  footer{background:var(--space-950); color:#8EA0BC; text-align:center; padding:46px 24px 34px;}
+  footer .verse{font-family:'Baloo 2'; color:#EAF2FA; font-size:1.02rem; max-width:520px; margin:0 auto 6px; font-style:italic;}
+  footer .cite{color:var(--gold); font-size:.84rem; font-weight:700; margin-bottom:18px;}
+  footer .tag{font-size:.77rem;}
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width:860px){
+    .facts-grid{grid-template-columns:repeat(2,1fr);}
+    .curio-grid{grid-template-columns:repeat(2,1fr);}
+    .color-layout{grid-template-columns:1fr;}
+    .palette-box{position:static;}
+    .play-grid{grid-template-columns:1fr;}
+    .swatches{grid-template-columns:repeat(8,1fr);}
+  }
+  @media (max-width:520px){
+    section{padding:52px 0;}
+    .story-controls{flex-wrap:wrap; justify-content:center;}
+    .slot,.planet-chip{width:48px; height:48px; font-size:.56rem;}
+    .sun-chip{width:44px; height:44px;}
+  }
+
+  /* ============ PRINT ============ */
+  @media print{
+    body{background:#fff;}
+    .navbar,.hero,#numeros,#historia,#curiosidades,#brincar,#jogo,#quiz,footer,
+    #onboard,#countdown,.passport-fab,.passport-panel,.toast,#confetti{display:none !important;}
+    #colorir,#certificado{display:none;}
+    body[data-print="colorir"] #colorir{display:block !important; padding:16px 0;}
+    body[data-print="colorir"] .color-tabs,
+    body[data-print="colorir"] .palette-box,
+    body[data-print="colorir"] #colorir .section-head p,
+    body[data-print="colorir"] #colorir .listen{display:none !important;}
+    body[data-print="colorir"] .color-panel{display:block !important; page-break-after:always;}
+    body[data-print="colorir"] .color-layout{grid-template-columns:1fr;}
+    body[data-print="colorir"] .colorable{fill:#fff !important;}
+    body[data-print="colorir"] .coloring-canvas{box-shadow:none; border:1px solid #ccc;}
+    body[data-print="certificado"] #certificado{display:block !important; padding:0;}
+    body[data-print="certificado"] #certificado .section-head,
+    body[data-print="certificado"] #certificado .cert-actions{display:none !important;}
+    body[data-print="certificado"] .certificate{box-shadow:none;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ ONBOARDING ============ -->
+<div id="onboard">
+  <div class="ob-card">
+    <svg class="ob-rocket" viewBox="0 0 120 170">
+      <path d="M60 4 C92 32 92 108 60 138 C28 108 28 32 60 4Z" fill="#EDF2F7"/>
+      <circle cx="60" cy="52" r="17" fill="#2E86AB" stroke="#10315C" stroke-width="3"/>
+      <path d="M28 100 L2 152 L40 128Z" fill="#F1785A"/>
+      <path d="M92 100 L118 152 L80 128Z" fill="#F1785A"/>
+      <path d="M44 136 L60 170 L76 136Z" fill="#E9B44C"/>
+    </svg>
+    <h1>Missão Netuno</h1>
+    <p>Antes de decolar, me diz: qual é o seu nome, astronauta?</p>
+    <input class="ob-input" id="obName" type="text" maxlength="18" placeholder="Escreva aqui" autocomplete="off">
+    <button class="btn-big" id="obGo">🚀 Decolar!</button>
+    <button class="ob-skip" id="obSkip">pular e ir direto</button>
+  </div>
+</div>
+<div id="countdown"><div class="cd-num" id="cdNum">3</div></div>
+
+<!-- ============ NAV ============ -->
+<nav class="navbar">
+  <div class="wrap">
+    <span class="nav-brand">🪐 Missão Netuno</span>
+    <a class="nav-link" href="#numeros">Números</a>
+    <a class="nav-link" href="#historia">História</a>
+    <a class="nav-link" href="#curiosidades">Curiosidades</a>
+    <a class="nav-link" href="#colorir">Colorir</a>
+    <a class="nav-link" href="#brincar">Brincar</a>
+    <a class="nav-link" href="#jogo">Jogo</a>
+    <a class="nav-link" href="#quiz">Quiz</a>
+    <a class="nav-link" href="#certificado">Certificado</a>
+    <button class="sound-toggle" id="soundToggle">🔊 Som ligado</button>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="stars" id="starsField"></div>
+  <div class="hero-inner">
+    <span class="eyebrow-badge">🚀 Projeto Paideia · K5 · Deus criou o Universo</span>
+    <h1>NETUNO</h1>
+    <p class="sub">o planeta que ninguém consegue ver a olho nu</p>
+
+    <div class="planet-stage" id="planetStage" title="Toque no planeta!">
+      <div class="ring-orbit"></div>
+      <div class="moon-pivot"><div class="moon"></div></div>
+      <div class="planet">
+        <div class="band band1"></div><div class="band band2"></div><div class="band band3"></div>
+        <div class="dark-spot"></div>
+      </div>
+      <div class="poke-hint" id="pokeHint">👆 toque no planeta</div>
+    </div>
+
+    <div class="mascot-row">
+      <svg class="mascot" viewBox="0 0 100 100">
+        <g class="tail"><path d="M55 55 L90 28 L72 64 Z" fill="#E9B44C" opacity=".85"/></g>
+        <circle cx="42" cy="52" r="30" fill="#F1785A"/>
+        <circle cx="33" cy="46" r="5" fill="#10315C"/><circle cx="52" cy="46" r="5" fill="#10315C"/>
+        <path d="M30 60 Q42 70 54 60" stroke="#10315C" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div class="bubble" id="zuzuBubble">Oi! Eu sou o Zuzu. Vou te acompanhar até Netuno!</div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ NÚMEROS ============ -->
+<section class="section-cream" id="numeros">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Netuno em números</span>
+      <h2>Um planeta de recordes</h2>
+      <p>Toque em cada cartão para ouvir.</p>
+    </div>
+    <div class="facts-grid">
+      <div class="fact-card" data-say="Dentro de Netuno cabem cinquenta e oito Terras!">
+        <div class="fact-icon">🌍</div><div class="fact-num" data-count="58">0</div>
+        <div class="fact-label">Terras cabem dentro dele</div></div>
+      <div class="fact-card" data-say="Netuno tem dezesseis luas. A gente aqui na Terra tem só uma!">
+        <div class="fact-icon">🌙</div><div class="fact-num" data-count="16">0</div>
+        <div class="fact-label">luas conhecidas</div></div>
+      <div class="fact-card" data-say="O vento de Netuno chega a dois mil e cem quilômetros por hora. É mais rápido que o som!">
+        <div class="fact-icon">💨</div><div class="fact-num" data-count="2100">0</div>
+        <div class="fact-label">km/h — o vento mais rápido de todos</div></div>
+      <div class="fact-card" data-say="Um ano em Netuno demora cento e sessenta e cinco anos da Terra!">
+        <div class="fact-icon">🎂</div><div class="fact-num" data-count="165">0</div>
+        <div class="fact-label">anos terrestres dura 1 ano lá</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HISTÓRIA ============ -->
+<section class="section-sky" id="historia">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Hora da história</span>
+      <h2>A viagem até Netuno</h2>
+      <p>Toque em "Ouvir" e a história é lida em voz alta.</p>
+    </div>
+    <div class="story-shell">
+      <div class="story-viewport" id="storyViewport"></div>
+      <div class="story-controls">
+        <button class="story-btn" id="storyPrev">◀ Voltar</button>
+        <button class="listen" id="storyListen">🔊 Ouvir</button>
+        <div class="story-dots" id="storyDots"></div>
+        <button class="story-btn" id="storyNext">Avançar ▶</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CURIOSIDADES ============ -->
+<section class="section-cream" id="curiosidades">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Vira e descobre</span>
+      <h2>8 curiosidades para espantar a turma</h2>
+      <p>Toque em cada cartão para virar — e ele lê a curiosidade pra você.</p>
+    </div>
+    <div class="curio-grid" id="curioGrid"></div>
+  </div>
+</section>
+
+<!-- ============ COLORIR ============ -->
+<section class="section-sky" id="colorir">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Hora da arte</span>
+      <h2>Páginas para colorir</h2>
+      <p>Escolha uma cor e toque nas partes do desenho. Dá para imprimir em branco para a turma toda.</p>
+    </div>
+
+    <div class="color-tabs">
+      <button class="color-tab active" data-panel="p1">🪐 Netuno</button>
+      <button class="color-tab" data-panel="p2">🚀 Foguete</button>
+      <button class="color-tab" data-panel="p3">☀️ Sistema Solar</button>
+    </div>
+
+    <!-- Netuno -->
+    <div class="color-panel active" id="p1">
+      <div class="color-layout">
+        <div class="coloring-canvas">
+          <svg viewBox="0 0 400 340" width="100%">
+            <defs><clipPath id="planetClip"><circle cx="195" cy="185" r="108"/></clipPath></defs>
+            <ellipse class="colorable" data-default="#FFFFFF" cx="195" cy="185" rx="178" ry="34" fill="#FFFFFF" stroke="#10315C" stroke-width="4" transform="rotate(-14 195 185)"/>
+            <circle class="colorable" data-default="#FFFFFF" cx="195" cy="185" r="108" fill="#FFFFFF" stroke="#10315C" stroke-width="4"/>
+            <g clip-path="url(#planetClip)">
+              <path d="M96 150 Q195 128 294 150" stroke="#10315C" stroke-width="4" fill="none" opacity=".55"/>
+              <path d="M90 205 Q195 228 300 205" stroke="#10315C" stroke-width="4" fill="none" opacity=".55"/>
+              <ellipse class="colorable" data-default="#FFFFFF" cx="150" cy="235" rx="34" ry="17" fill="#FFFFFF" stroke="#10315C" stroke-width="3"/>
+            </g>
+            <circle class="colorable" data-default="#FFFFFF" cx="337" cy="75" r="19" fill="#FFFFFF" stroke="#10315C" stroke-width="3"/>
+            <g stroke="#10315C" stroke-width="3" fill="none" stroke-linecap="round">
+              <path d="M35 50 L40 39 M46 56 L55 47"/><path d="M355 260 L360 249 M366 266 L375 257"/>
+              <path d="M28 275 L33 264 M39 281 L48 272"/>
+            </g>
+          </svg>
+        </div>
+        <div class="palette-box">
+          <h3>🖍️ Paleta</h3>
+          <div class="swatches" data-target="p1"></div>
+          <button class="tool-btn" data-clear="p1">🧹 Limpar tudo</button>
+          <button class="tool-btn primary" data-print="colorir">🖨️ Imprimir desenhos</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Foguete -->
+    <div class="color-panel" id="p2">
+      <div class="color-layout">
+        <div class="coloring-canvas">
+          <svg viewBox="0 0 400 340" width="100%">
+            <g stroke="#10315C" stroke-width="3" fill="none" stroke-linecap="round">
+              <path d="M60 40 L64 30 M75 46 L84 38"/><path d="M330 220 L334 210 M345 226 L354 218"/>
+              <path d="M40 220 L44 210 M55 226 L64 218"/>
+            </g>
+            <circle class="colorable" data-default="#FFFFFF" cx="330" cy="90" r="24" fill="#FFFFFF" stroke="#10315C" stroke-width="4"/>
+            <circle class="colorable" data-default="#FFFFFF" cx="90" cy="260" r="18" fill="#FFFFFF" stroke="#10315C" stroke-width="4"/>
+            <g transform="translate(150,60) rotate(20)">
+              <path class="colorable" data-default="#FFFFFF" d="M40 0 C68 20 68 130 40 170 C12 130 12 20 40 0Z" fill="#FFFFFF" stroke="#10315C" stroke-width="4"/>
+              <circle class="colorable" data-default="#FFFFFF" cx="40" cy="55" r="16" fill="#FFFFFF" stroke="#10315C" stroke-width="3"/>
+              <path class="colorable" data-default="#FFFFFF" d="M14 110 L-24 165 L28 138Z" fill="#FFFFFF" stroke="#10315C" stroke-width="3"/>
+              <path class="colorable" data-default="#FFFFFF" d="M66 110 L104 165 L52 138Z" fill="#FFFFFF" stroke="#10315C" stroke-width="3"/>
+              <path class="colorable" data-default="#FFFFFF" d="M26 150 L40 195 L54 150Z" fill="#FFFFFF" stroke="#10315C" stroke-width="3"/>
+            </g>
+          </svg>
+        </div>
+        <div class="palette-box">
+          <h3>🖍️ Paleta</h3>
+          <div class="swatches" data-target="p2"></div>
+          <button class="tool-btn" data-clear="p2">🧹 Limpar tudo</button>
+          <button class="tool-btn primary" data-print="colorir">🖨️ Imprimir desenhos</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sistema Solar -->
+    <div class="color-panel" id="p3">
+      <div class="color-layout">
+        <div class="coloring-canvas">
+          <svg viewBox="0 0 400 260" width="100%">
+            <circle class="colorable" data-default="#FFFFFF" cx="34" cy="130" r="30" fill="#FFFFFF" stroke="#10315C" stroke-width="4"/>
+            <circle class="colorable" data-default="#FFFFFF" cx="86" cy="130" r="8"  fill="#FFFFFF" stroke="#10315C" stroke-width="3"/>
+            <circle class="colorable" data-default="#FFFFFF" cx="114" cy="130" r="11" fill="#FFFFFF" stroke="#10315C" stroke-width="3"/>
+            <circle class="colorable" data-default="#FFFFFF" cx="148" cy="130" r="12" fill="#FFFFFF" stroke="#10315C" stroke-width="3"/>
+            <circle class="colorable" data-default="#FFFFFF" cx="182" cy="130" r="10" fill="#FFFFFF" stroke="#10315C" stroke-width="3"/>
+            <circle class="colorable" data-default="#FFFFFF" cx="228" cy="130" r="26" fill="#FFFFFF" stroke="#10315C" stroke-width="3"/>
+            <circle class="colorable" data-default="#FFFFFF" cx="290" cy="130" r="21" fill="#FFFFFF" stroke="#10315C" stroke-width="3"/>
+            <ellipse class="colorable" data-default="#FFFFFF" cx="290" cy="130" rx="34" ry="8" fill="#FFFFFF" stroke="#10315C" stroke-width="3" transform="rotate(-16 290 130)"/>
+            <circle class="colorable" data-default="#FFFFFF" cx="342" cy="130" r="15" fill="#FFFFFF" stroke="#10315C" stroke-width="3"/>
+            <circle class="colorable" data-default="#FFFFFF" cx="378" cy="130" r="14" fill="#FFFFFF" stroke="#10315C" stroke-width="4"/>
+            <g stroke="#10315C" stroke-width="2.5" fill="none" stroke-linecap="round">
+              <path d="M120 34 L124 24 M132 40 L140 32"/><path d="M250 224 L254 214 M262 230 L270 222"/>
+            </g>
+          </svg>
+        </div>
+        <div class="palette-box">
+          <h3>🖍️ Paleta</h3>
+          <div class="swatches" data-target="p3"></div>
+          <button class="tool-btn" data-clear="p3">🧹 Limpar tudo</button>
+          <button class="tool-btn primary" data-print="colorir">🖨️ Imprimir desenhos</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BRINCAR ============ -->
+<section class="section-dark" id="brincar">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker" style="color:var(--gold)">Mãos à obra</span>
+      <h2>Vamos sentir Netuno?</h2>
+      <p>Quatro experiências para fazer na tela — e depois tentar de verdade em casa ou na sala.</p>
+    </div>
+
+    <div class="play-grid">
+      <div class="play-card">
+        <h3>💨 O vento mais rápido</h3>
+        <p>Arraste e escute o vento ficar mais forte.</p>
+        <div class="windsock-wrap">
+          <svg width="150" height="110" viewBox="0 0 150 110">
+            <rect x="70" y="12" width="4" height="72" fill="#8896AC"/>
+            <g id="windsock" style="transform:translate(72px,16px) rotate(20deg);">
+              <path d="M0 0 L46 6 L34 16 L46 26 L0 20 Z" fill="#F1785A"/>
+            </g>
+          </svg>
+        </div>
+        <input type="range" min="0" max="100" value="15" id="windRange" aria-label="Velocidade do vento">
+        <div class="wind-readout" id="windReadout">315 km/h</div>
+        <div class="wind-compare" id="windCompare">Já é um vento bem forte aqui na Terra.</div>
+      </div>
+
+      <div class="play-card">
+        <h3>🌍 Terra x Netuno</h3>
+        <p>Veja a diferença de tamanho de verdade.</p>
+        <div class="size-compare">
+          <div><div class="size-circle earth-circle" id="earthCircle" style="width:26px;height:26px;"></div>
+            <div class="size-label">Terra</div></div>
+          <div><div class="size-circle neptune-circle" id="neptuneCircle" style="width:26px;height:26px;"></div>
+            <div class="size-label">Netuno</div></div>
+        </div>
+        <div class="toggle-row">
+          <button class="toggle-btn" id="btnSmall">Igualzinhos</button>
+          <button class="toggle-btn active" id="btnReal">Tamanho real</button>
+        </div>
+      </div>
+
+      <div class="play-card">
+        <h3>🎂 Sua idade em Netuno</h3>
+        <p>Quantos anos você tem aqui na Terra?</p>
+        <div class="toggle-row" id="ageBtns">
+          <button class="toggle-btn" data-age="4">4 anos</button>
+          <button class="toggle-btn" data-age="5">5 anos</button>
+          <button class="toggle-btn" data-age="6">6 anos</button>
+          <button class="toggle-btn" data-age="7">7 anos</button>
+        </div>
+        <div class="big-answer" id="ageAnswer">Escolha a sua idade!</div>
+        <div class="answer-sub" id="ageSub"></div>
+      </div>
+
+      <div class="play-card">
+        <h3>⚖️ Quanto pesa em Netuno?</h3>
+        <p>A gravidade lá é um pouquinho mais forte. Escolha uma coisa:</p>
+        <div class="toggle-row" id="gravBtns">
+          <button class="toggle-btn" data-obj="melancia" data-kg="5">🍉 Melancia</button>
+          <button class="toggle-btn" data-obj="mochila" data-kg="3">🎒 Mochila</button>
+          <button class="toggle-btn" data-obj="cachorro" data-kg="10">🐶 Cachorro</button>
+          <button class="toggle-btn" data-obj="elefante" data-kg="4000">🐘 Elefante</button>
+        </div>
+        <div class="big-answer" id="gravAnswer">Escolha uma coisa!</div>
+        <div class="answer-sub" id="gravSub"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ JOGO ============ -->
+<section class="section-dark" id="jogo" style="padding-top:0;">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker" style="color:var(--gold)">Desafio</span>
+      <h2>Monte o Sistema Solar</h2>
+      <p>Toque nos planetas na ordem certa, começando pertinho do Sol.</p>
+    </div>
+    <div class="game-board">
+      <div class="game-hint" id="gameHint">Toque no planeta mais pertinho do Sol!</div>
+      <div class="orbit-slots" id="orbitSlots"></div>
+      <div class="chip-tray" id="chipTray"></div>
+      <p class="mnemonic">Dica: <strong>M</strong>inha <strong>V</strong>ovó <strong>T</strong>raz <strong>M</strong>uitas <strong>J</strong>oias <strong>S</strong>empre <strong>U</strong>ma <strong>N</strong>ova</p>
+      <div style="text-align:center; margin-top:14px;">
+        <button class="story-btn" id="gameReset">🔄 Começar de novo</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ QUIZ ============ -->
+<section class="section-cream" id="quiz">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Para a turma toda</span>
+      <h2>Quiz relâmpago</h2>
+      <p>A professora pode projetar e a turma responde junto. As perguntas são lidas em voz alta.</p>
+    </div>
+    <div class="quiz-shell" id="quizShell"></div>
+  </div>
+</section>
+
+<!-- ============ CERTIFICADO ============ -->
+<section class="section-sky" id="certificado">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Fim da missão</span>
+      <h2>Certificado de Astronauta</h2>
+      <p>Complete as atividades para ganhar os adesivos e liberar o certificado.</p>
+    </div>
+    <div class="cert-wrap" id="certWrap"></div>
+  </div>
+</section>
+
+<footer>
+  <p class="verse">"Os céus proclamam a glória de Deus, e o firmamento anuncia a obra das suas mãos."</p>
+  <p class="cite">Salmos 19:1</p>
+  <p class="tag">Projeto Paideia · Educação Infantil K5 · Deus criou o Universo 🪐</p>
+</footer>
+
+<!-- passaporte -->
+<button class="passport-fab" id="passportFab">🎫 Passaporte <span id="fabCount">0/7</span></button>
+<div class="passport-panel" id="passportPanel">
+  <h3>🎫 Passaporte Espacial</h3>
+  <div class="who" id="passportWho">Astronauta</div>
+  <div class="sticker-grid" id="stickerGrid"></div>
+  <div class="passport-bar"><div class="passport-fill" id="passportFill"></div></div>
+  <div class="passport-count" id="passportCount">0 de 7 adesivos</div>
+</div>
+
+<div class="toast" id="toast"></div>
+<canvas id="confetti"></canvas>
+
+<script>
+/* =====================================================
+   ESTADO
+===================================================== */
+const State = {
+  name: '',
+  soundOn: true,
+  stickers: {},
+};
+
+const STICKERS = [
+  {id:'decolagem',  emoji:'🚀', label:'Decolagem'},
+  {id:'numeros',    emoji:'⭐', label:'Números'},
+  {id:'historia',   emoji:'📖', label:'História'},
+  {id:'curioso',    emoji:'💡', label:'Curioso'},
+  {id:'artista',    emoji:'🎨', label:'Artista'},
+  {id:'astronomo',  emoji:'🪐', label:'Astrônomo'},
+  {id:'campeao',    emoji:'🏆', label:'Campeão'},
+];
+
+/* =====================================================
+   SOM (Web Audio — sem arquivos externos)
+===================================================== */
+const Sound = (() => {
+  let ctx = null, windSrc = null, windGain = null, windFilter = null;
+
+  function ensure(){
+    if(!ctx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return null;
+      ctx = new AC();
+    }
+    if(ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  function tone(freq, dur, type='sine', vol=.16, slideTo=null){
+    if(!State.soundOn) return;
+    const c = ensure(); if(!c) return;
+    const osc = c.createOscillator(), g = c.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, c.currentTime);
+    if(slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, c.currentTime + dur);
+    g.gain.setValueAtTime(0, c.currentTime);
+    g.gain.linearRampToValueAtTime(vol, c.currentTime + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + dur);
+    osc.connect(g); g.connect(c.destination);
+    osc.start(); osc.stop(c.currentTime + dur + .02);
+  }
+
+  const sfx = {
+    pop:    () => tone(520, .12, 'sine', .14, 880),
+    tap:    () => tone(360, .09, 'triangle', .12),
+    ding:   () => { tone(880,.16,'sine',.15); setTimeout(()=>tone(1320,.22,'sine',.13),90); },
+    nope:   () => tone(240, .22, 'sine', .12, 170),
+    sparkle:() => { [1046,1318,1568,2093].forEach((f,i)=> setTimeout(()=>tone(f,.22,'sine',.11), i*70)); },
+    whoosh: () => tone(140, .5, 'sawtooth', .1, 800),
+    launch: () => tone(80, 1.1, 'sawtooth', .13, 500),
+  };
+
+  function windStart(){
+    const c = ensure(); if(!c || windSrc) return;
+    const len = c.sampleRate * 2;
+    const buf = c.createBuffer(1, len, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i] = Math.random()*2-1;
+    windSrc = c.createBufferSource();
+    windSrc.buffer = buf; windSrc.loop = true;
+    windFilter = c.createBiquadFilter();
+    windFilter.type = 'bandpass'; windFilter.frequency.value = 500; windFilter.Q.value = .8;
+    windGain = c.createGain(); windGain.gain.value = 0;
+    windSrc.connect(windFilter); windFilter.connect(windGain); windGain.connect(c.destination);
+    windSrc.start();
+  }
+  function windSet(v){ // v: 0..1
+    if(!windGain || !windFilter) return;
+    const target = State.soundOn ? v*0.12 : 0;
+    windGain.gain.setTargetAtTime(target, ctx.currentTime, .08);
+    windFilter.frequency.setTargetAtTime(300 + v*1200, ctx.currentTime, .08);
+  }
+  function windStop(){ if(windGain) windGain.gain.setTargetAtTime(0, ctx.currentTime, .1); }
+
+  return { sfx, ensure, windStart, windSet, windStop };
+})();
+
+/* =====================================================
+   NARRAÇÃO (Web Speech API)
+===================================================== */
+const Speech = (() => {
+  const supported = 'speechSynthesis' in window;
+  let voice = null;
+
+  function pick(){
+    if(!supported) return;
+    const vs = speechSynthesis.getVoices();
+    voice = vs.find(v => /pt[-_]BR/i.test(v.lang)) || vs.find(v => /^pt/i.test(v.lang)) || null;
+  }
+  if(supported){ pick(); speechSynthesis.onvoiceschanged = pick; }
+
+  function speak(text, onEnd){
+    if(!supported || !State.soundOn){ if(onEnd) onEnd(); return; }
+    try{
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'pt-BR';
+      if(voice) u.voice = voice;
+      u.rate = .92; u.pitch = 1.08;
+      if(onEnd) u.onend = onEnd;
+      speechSynthesis.speak(u);
+    }catch(e){ if(onEnd) onEnd(); }
+  }
+  function stop(){ if(supported){ try{ speechSynthesis.cancel(); }catch(e){} } }
+  return { speak, stop, supported };
+})();
+
+/* =====================================================
+   TOAST + CONFETTI
+===================================================== */
+const toastEl = document.getElementById('toast');
+let toastTimer = null;
+function toast(msg){
+  toastEl.innerHTML = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 3200);
+}
+
+const confettiCanvas = document.getElementById('confetti');
+const cctx = confettiCanvas.getContext('2d');
+let confettiPieces = [], confettiRAF = null;
+function sizeCanvas(){ confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight; }
+sizeCanvas(); addEventListener('resize', sizeCanvas);
+
+function confetti(count=90){
+  const colors = ['#E9B44C','#F1785A','#2E86AB','#7FD1E8','#8E6BB0','#4CAF7D'];
+  for(let i=0;i<count;i++){
+    confettiPieces.push({
+      x: Math.random()*confettiCanvas.width,
+      y: -20 - Math.random()*confettiCanvas.height*.3,
+      w: 6+Math.random()*7, h: 8+Math.random()*9,
+      c: colors[Math.floor(Math.random()*colors.length)],
+      vy: 2+Math.random()*3, vx: -1.2+Math.random()*2.4,
+      rot: Math.random()*Math.PI, vr: -.12+Math.random()*.24
+    });
+  }
+  if(!confettiRAF) confettiRAF = requestAnimationFrame(drawConfetti);
+}
+function drawConfetti(){
+  cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+  confettiPieces = confettiPieces.filter(p => p.y < confettiCanvas.height + 40);
+  confettiPieces.forEach(p=>{
+    p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+    cctx.save(); cctx.translate(p.x,p.y); cctx.rotate(p.rot);
+    cctx.fillStyle = p.c; cctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); cctx.restore();
+  });
+  if(confettiPieces.length){ confettiRAF = requestAnimationFrame(drawConfetti); }
+  else { cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); confettiRAF = null; }
+}
+
+/* =====================================================
+   PASSAPORTE
+===================================================== */
+const stickerGrid = document.getElementById('stickerGrid');
+const passportFill = document.getElementById('passportFill');
+const passportCount = document.getElementById('passportCount');
+const fabCount = document.getElementById('fabCount');
+const passportFab = document.getElementById('passportFab');
+
+function renderPassport(){
+  stickerGrid.innerHTML = STICKERS.map(s => `
+    <div class="sticker ${State.stickers[s.id] ? 'earned':''}">
+      <div>${s.emoji}</div><div class="lbl">${s.label}</div>
+    </div>`).join('');
+  const n = Object.keys(State.stickers).length, total = STICKERS.length;
+  passportFill.style.width = (n/total*100) + '%';
+  passportCount.textContent = `${n} de ${total} adesivos`;
+  fabCount.textContent = `${n}/${total}`;
+  document.getElementById('passportWho').textContent =
+    State.name ? `Astronauta ${State.name}` : 'Astronauta';
+  renderCertificate();
+}
+
+function award(id){
+  if(State.stickers[id]) return;
+  const s = STICKERS.find(x=>x.id===id); if(!s) return;
+  State.stickers[id] = true;
+  renderPassport();
+  Sound.sfx.sparkle();
+  passportFab.classList.add('pop');
+  setTimeout(()=>passportFab.classList.remove('pop'), 600);
+  toast(`${s.emoji} Adesivo conquistado: <strong>${s.label}</strong>!`);
+  confetti(45);
+  const n = Object.keys(State.stickers).length;
+  if(n === STICKERS.length){
+    setTimeout(()=>{
+      confetti(160);
+      toast('🏅 Missão completa! Seu certificado está pronto!');
+      Speech.speak(`Parabéns${State.name ? ', ' + State.name : ''}! Você completou a Missão Netuno! Seu certificado está pronto.`);
+    }, 1400);
+  }
+}
+
+passportFab.addEventListener('click', ()=>{
+  document.getElementById('passportPanel').classList.toggle('open');
+  Sound.sfx.tap();
+});
+
+/* =====================================================
+   ONBOARDING + CONTAGEM REGRESSIVA
+===================================================== */
+const onboard = document.getElementById('onboard');
+const countdown = document.getElementById('countdown');
+const cdNum = document.getElementById('cdNum');
+
+function startMission(){
+  Sound.ensure();
+  const raw = document.getElementById('obName').value.trim();
+  State.name = raw.replace(/\s+/g,' ').slice(0,18);
+  onboard.classList.add('gone');
+  countdown.classList.add('on');
+  const seq = ['3','2','1','DECOLAR!'];
+  let i = 0;
+  const step = () => {
+    cdNum.textContent = seq[i];
+    cdNum.className = 'cd-num' + (i===3 ? ' cd-go':'');
+    cdNum.style.animation = 'none'; void cdNum.offsetWidth; cdNum.style.animation = '';
+    if(i===3){ Sound.sfx.launch(); } else { Sound.sfx.tap(); }
+    i++;
+    if(i < seq.length){ setTimeout(step, 850); }
+    else {
+      setTimeout(()=>{
+        countdown.classList.remove('on');
+        onboard.style.display = 'none';
+        award('decolagem');
+        const greet = State.name
+          ? `Bem-vindo à Missão Netuno, ${State.name}! Toque no planeta para começar.`
+          : `Bem-vindo à Missão Netuno! Toque no planeta para começar.`;
+        setTimeout(()=> Speech.speak(greet), 500);
+        if(State.name){
+          document.getElementById('zuzuBubble').textContent =
+            `Oi, ${State.name}! Eu sou o Zuzu. Vamos até Netuno juntos!`;
+        }
+      }, 900);
+    }
+  };
+  step();
+}
+document.getElementById('obGo').addEventListener('click', startMission);
+document.getElementById('obSkip').addEventListener('click', startMission);
+document.getElementById('obName').addEventListener('keydown', e=>{ if(e.key==='Enter') startMission(); });
+
+/* =====================================================
+   SOM ON/OFF
+===================================================== */
+const soundToggle = document.getElementById('soundToggle');
+soundToggle.addEventListener('click', ()=>{
+  State.soundOn = !State.soundOn;
+  soundToggle.textContent = State.soundOn ? '🔊 Som ligado' : '🔇 Som desligado';
+  if(!State.soundOn){ Speech.stop(); Sound.windStop(); }
+  else Sound.sfx.tap();
+});
+
+/* =====================================================
+   ESTRELAS
+===================================================== */
+(function(){
+  const field = document.getElementById('starsField');
+  for(let i=0;i<80;i++){
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.top = Math.random()*100+'%';
+    s.style.left = Math.random()*100+'%';
+    s.style.animationDelay = (Math.random()*3)+'s';
+    const sz = (1+Math.random()*2.4)+'px';
+    s.style.width = s.style.height = sz;
+    field.appendChild(s);
+  }
+})();
+
+/* =====================================================
+   PLANETA INTERATIVO
+===================================================== */
+(function(){
+  const stage = document.getElementById('planetStage');
+  const bubble = document.getElementById('zuzuBubble');
+  const hint = document.getElementById('pokeHint');
+  const facts = [
+    'Netuno é o planeta mais longe do Sol!',
+    'Lá o vento é mais rápido que o som!',
+    'Netuno tem 16 luas. A gente tem só uma!',
+    'Um ano lá dura 165 anos da Terra!',
+    'Netuno é azul por causa de um gás chamado metano.',
+    'Só uma nave passou por lá: a Voyager 2, em 1989.',
+    'Os cientistas acham que lá chove diamante!',
+    'Netuno foi descoberto com uma conta de matemática!'
+  ];
+  let i = 0, poked = 0;
+  stage.addEventListener('click', ()=>{
+    stage.classList.remove('poke'); void stage.offsetWidth; stage.classList.add('poke');
+    Sound.sfx.pop();
+    const f = facts[i % facts.length]; i++;
+    bubble.textContent = f;
+    Speech.speak(f);
+    hint.style.display = 'none';
+    poked++;
+    if(poked >= 3) award('numeros');
+  });
+})();
+
+/* =====================================================
+   CONTADORES
+===================================================== */
+(function(){
+  const cards = document.querySelectorAll('.fact-num');
+  const obs = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(!e.isIntersecting) return;
+      const el = e.target, target = parseInt(el.dataset.count,10);
+      let cur = 0; const step = Math.max(1, Math.round(target/40));
+      (function tick(){
+        cur += step;
+        if(cur >= target){ el.textContent = target.toLocaleString('pt-BR'); return; }
+        el.textContent = cur.toLocaleString('pt-BR');
+        requestAnimationFrame(tick);
+      })();
+      obs.unobserve(el);
+    });
+  }, {threshold:.5});
+  cards.forEach(c=>obs.observe(c));
+
+  document.querySelectorAll('.fact-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      Sound.sfx.pop();
+      Speech.speak(card.dataset.say);
+      award('numeros');
+    });
+  });
+})();
+
+/* =====================================================
+   HISTÓRIA
+===================================================== */
+const Story = (() => {
+  const pages = [
+    { art:`<circle cx="100" cy="100" r="95" fill="#0C1B3A"/>
+           <circle cx="40" cy="40" r="2" fill="#fff"/><circle cx="160" cy="60" r="2" fill="#fff"/>
+           <circle cx="150" cy="150" r="2" fill="#fff"/><circle cx="60" cy="160" r="2" fill="#fff"/>
+           <g transform="translate(70,60) rotate(35)">
+             <path d="M20 0 C34 10 34 46 20 60 C6 46 6 10 20 0Z" fill="#E7ECF2"/>
+             <circle cx="20" cy="24" r="7" fill="#2E86AB"/>
+             <path d="M8 44 L-6 66 L14 56Z" fill="#F1785A"/><path d="M32 44 L46 66 L26 56Z" fill="#F1785A"/>
+             <path d="M14 60 L20 82 L26 60Z" fill="#E9B44C"/></g>`,
+      text: p => `Era uma vez ${p} uma nave pequenina que decidiu visitar o planeta mais distante de todos.` },
+    { art:`<circle cx="100" cy="100" r="95" fill="#0C1B3A"/>
+           <circle cx="40" cy="150" r="16" fill="#C1440E"/><circle cx="80" cy="60" r="26" fill="#D8A15C"/>
+           <circle cx="140" cy="130" r="20" fill="#E3C77A"/>
+           <g transform="translate(150,40) rotate(120)">
+             <path d="M14 0 C24 8 24 32 14 42 C4 32 4 8 14 0Z" fill="#E7ECF2"/>
+             <path d="M6 30 L-4 46 L10 40Z" fill="#F1785A"/><path d="M22 30 L32 46 L18 40Z" fill="#F1785A"/></g>`,
+      text: () => 'Ela voou, voou, voou... passou por Marte, Júpiter, Saturno e Urano. Doze anos de viagem!' },
+    { art:`<circle cx="100" cy="100" r="95" fill="#0C1B3A"/>
+           <circle cx="100" cy="105" r="62" fill="#2E86AB"/>
+           <ellipse cx="100" cy="90" rx="55" ry="9" fill="#fff" opacity=".22"/>
+           <ellipse cx="100" cy="118" rx="50" ry="6" fill="#fff" opacity=".15"/>`,
+      text: () => 'Até que, no fim do caminho escuro, apareceu uma bola azul enorme: Netuno!' },
+    { art:`<circle cx="100" cy="100" r="95" fill="#0C1B3A"/>
+           <circle cx="100" cy="105" r="60" fill="#2E86AB"/>
+           <g stroke="#fff" stroke-width="3" fill="none" opacity=".7" stroke-linecap="round">
+             <path d="M30 70 Q60 60 90 70"/><path d="M20 95 Q55 82 95 95"/><path d="M30 125 Q65 138 100 122"/></g>`,
+      text: () => 'Lá, o vento é o mais rápido de todos os planetas — mais rápido que o som!' },
+    { art:`<circle cx="100" cy="100" r="95" fill="#0C1B3A"/>
+           <circle cx="70" cy="110" r="40" fill="#2E86AB"/>
+           <circle cx="150" cy="70" r="20" fill="#C9D3DE"/>
+           <path d="M150 55 L146 40 M156 55 L162 42 M144 62 L128 60" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`,
+      text: () => 'Uma lua chamada Tritão gira ao contrário de todas as outras e solta gêiseres de gelo.' },
+    { art:`<circle cx="100" cy="100" r="95" fill="#0C1B3A"/>
+           <circle cx="150" cy="120" r="34" fill="#2E86AB"/>
+           <g transform="translate(40,50) rotate(-25)">
+             <path d="M14 0 C24 8 24 32 14 42 C4 32 4 8 14 0Z" fill="#E7ECF2"/>
+             <path d="M6 30 L-4 46 L10 40Z" fill="#F1785A"/><path d="M22 30 L32 46 L18 40Z" fill="#F1785A"/></g>`,
+      text: p => `A nave deu tchau e voltou pra casa${p ? ', junto com ' + p : ''}, com uma baita história pra contar!` },
+  ];
+
+  const viewport = document.getElementById('storyViewport');
+  const dotsWrap = document.getElementById('storyDots');
+  const prevBtn = document.getElementById('storyPrev');
+  const nextBtn = document.getElementById('storyNext');
+  const listenBtn = document.getElementById('storyListen');
+  let idx = 0, built = false, seen = new Set();
+
+  function textFor(i){
+    const who = State.name || '';
+    if(i===0) return pages[0].text(who ? `${who} e` : '');
+    if(i===5) return pages[5].text(who);
+    return pages[i].text();
+  }
+
+  function build(){
+    viewport.innerHTML = pages.map((p,i)=>`
+      <div class="story-page ${i===0?'active':''}">
+        <svg class="story-art" viewBox="0 0 200 200">${p.art}</svg>
+        <p class="story-text" data-story-text="${i}">${textFor(i)}</p>
+      </div>`).join('');
+    dotsWrap.innerHTML = '';
+    pages.forEach((_,i)=>{
+      const d = document.createElement('button');
+      d.className = 'story-dot' + (i===0?' active':'');
+      d.setAttribute('aria-label', 'Página ' + (i+1));
+      d.addEventListener('click', ()=>go(i));
+      dotsWrap.appendChild(d);
+    });
+    built = true;
+  }
+
+  function refreshText(){
+    viewport.querySelectorAll('[data-story-text]').forEach(el=>{
+      el.textContent = textFor(parseInt(el.dataset.storyText,10));
+    });
+  }
+
+  function go(n, speak=true){
+    if(!built) build();
+    idx = Math.max(0, Math.min(pages.length-1, n));
+    viewport.querySelectorAll('.story-page').forEach((p,i)=>p.classList.toggle('active', i===idx));
+    dotsWrap.querySelectorAll('.story-dot').forEach((d,i)=>d.classList.toggle('active', i===idx));
+    prevBtn.disabled = idx===0;
+    nextBtn.disabled = idx===pages.length-1;
+    nextBtn.textContent = idx===pages.length-1 ? 'Fim ✨' : 'Avançar ▶';
+    seen.add(idx);
+    if(seen.size === pages.length) award('historia');
+    if(speak) say();
+  }
+
+  function say(){
+    listenBtn.classList.add('speaking');
+    listenBtn.textContent = '🔊 Lendo...';
+    Speech.speak(textFor(idx), ()=>{
+      listenBtn.classList.remove('speaking');
+      listenBtn.textContent = '🔊 Ouvir';
+    });
+    if(!Speech.supported || !State.soundOn){
+      listenBtn.classList.remove('speaking');
+      listenBtn.textContent = '🔊 Ouvir';
+    }
+  }
+
+  prevBtn.addEventListener('click', ()=>{ Sound.sfx.tap(); go(idx-1); });
+  nextBtn.addEventListener('click', ()=>{ Sound.sfx.tap(); go(idx+1); });
+  listenBtn.addEventListener('click', ()=>{ Sound.sfx.tap(); say(); });
+
+  build(); go(0, false);
+  return { refreshText };
+})();
+
+/* =====================================================
+   CURIOSIDADES
+===================================================== */
+(function(){
+  const data = [
+    ['🔭','O planeta descoberto no papel','Ninguém olhou o céu primeiro. Um matemático fez contas e disse: tem um planeta bem ali. E tinha!'],
+    ['🎂','Ninguém fez aniversário lá','Um ano em Netuno dura 165 anos da Terra. Ele só completou uma volta inteira em 2011.'],
+    ['💨','O vento mais rápido de todos','Até 2.100 quilômetros por hora. Mais rápido que o som!'],
+    ['🔥','Ele se esquenta por dentro','Netuno solta mais calor do que recebe do Sol. Um segredo guardado desde que ele nasceu.'],
+    ['🔄','Uma lua que anda ao contrário','Tritão gira para o lado oposto das outras luas, como se tivesse vindo de outro lugar.'],
+    ['❄️','Gêiseres de gelo','Mesmo no lugar mais frio já medido, Tritão solta esguichos de gelo que sobem bem alto.'],
+    ['💎','Será que chove diamante?','Os cientistas acham que, lá no fundo, a pressão é tão grande que forma chuva de diamante!'],
+    ['🛰️','Uma visita só, para sempre','Uma nave, a Voyager 2, passou perto de Netuno em 1989. E nunca mais ninguém voltou.']
+  ];
+  const grid = document.getElementById('curioGrid');
+  let flipped = new Set();
+  data.forEach((item,i)=>{
+    const card = document.createElement('div');
+    card.className = 'flip-card';
+    card.innerHTML = `
+      <div class="flip-inner">
+        <div class="flip-face flip-front">
+          <div class="emoji">${item[0]}</div>
+          <div class="t">${item[1]}</div>
+          <div class="tap-hint">toque para virar</div>
+        </div>
+        <div class="flip-face flip-back">${item[2]}</div>
+      </div>`;
+    card.addEventListener('click', ()=>{
+      card.classList.toggle('flipped');
+      Sound.sfx.pop();
+      if(card.classList.contains('flipped')){
+        Speech.speak(item[2]);
+        flipped.add(i);
+        if(flipped.size >= 4) award('curioso');
+      }
+    });
+    grid.appendChild(card);
+  });
+})();
+
+/* =====================================================
+   COLORIR
+===================================================== */
+(function(){
+  const palette = ['#2E86AB','#7FD1E8','#1B5A80','#10315C','#E9B44C','#F4D35E','#F1785A','#C0392B',
+                   '#8E6BB0','#4CAF7D','#2E7D5B','#F5A9C0','#8B5E3C','#C9D3DE','#6E7681','#FFFFFF'];
+  const selected = {p1:palette[0], p2:palette[0], p3:palette[0]};
+  const painted = new Set();
+
+  document.querySelectorAll('.swatches').forEach(wrap=>{
+    const target = wrap.dataset.target;
+    palette.forEach((c,i)=>{
+      const sw = document.createElement('button');
+      sw.className = 'swatch' + (i===0?' selected':'');
+      sw.style.background = c;
+      sw.setAttribute('aria-label','cor');
+      sw.addEventListener('click', ()=>{
+        selected[target] = c;
+        wrap.querySelectorAll('.swatch').forEach(s=>s.classList.remove('selected'));
+        sw.classList.add('selected');
+        Sound.sfx.tap();
+      });
+      wrap.appendChild(sw);
+    });
+  });
+
+  ['p1','p2','p3'].forEach(pid=>{
+    document.querySelectorAll('#'+pid+' .colorable').forEach((el,i)=>{
+      el.addEventListener('click', ()=>{
+        el.setAttribute('fill', selected[pid]);
+        Sound.sfx.pop();
+        painted.add(pid+':'+i);
+        if(painted.size >= 3) award('artista');
+      });
+    });
+  });
+
+  document.querySelectorAll('[data-clear]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const panel = document.getElementById(btn.dataset.clear);
+      panel.querySelectorAll('.colorable').forEach(el=> el.setAttribute('fill', el.dataset.default));
+      Sound.sfx.whoosh();
+    });
+  });
+
+  document.querySelectorAll('.color-tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.color-tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.color-panel').forEach(p=>p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.panel).classList.add('active');
+      Sound.sfx.tap();
+    });
+  });
+})();
+
+/* print helper */
+document.querySelectorAll('[data-print]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.body.dataset.print = btn.dataset.print;
+    window.print();
+    setTimeout(()=>{ delete document.body.dataset.print; }, 800);
+  });
+});
+
+/* =====================================================
+   BRINCAR
+===================================================== */
+(function(){
+  /* vento */
+  const range = document.getElementById('windRange');
+  const readout = document.getElementById('windReadout');
+  const compare = document.getElementById('windCompare');
+  const sock = document.getElementById('windsock');
+  let started = false;
+
+  function update(){
+    const v = parseInt(range.value,10);
+    const kmh = Math.round((v/100)*2100);
+    readout.textContent = kmh.toLocaleString('pt-BR') + ' km/h';
+    sock.style.transform = `translate(72px,16px) rotate(${10 + (v/100)*55}deg)`;
+    let msg;
+    if(kmh < 60) msg = 'Uma brisa gostosa aqui na Terra.';
+    else if(kmh < 120) msg = 'Já é um vento bem forte aqui na Terra.';
+    else if(kmh < 250) msg = 'Parecido com um furacão na Terra!';
+    else if(kmh < 900) msg = 'Mais forte que qualquer furacão já visto aqui!';
+    else if(kmh < 1500) msg = 'Isso já é vento de Netuno! 😱';
+    else msg = 'O vento de Netuno de verdade — mais rápido que o som!';
+    compare.textContent = msg;
+    Sound.windSet(v/100);
+  }
+  const kick = ()=>{ if(!started){ Sound.ensure(); Sound.windStart(); started = true; } };
+  range.addEventListener('pointerdown', kick);
+  range.addEventListener('input', ()=>{ kick(); update(); });
+  range.addEventListener('pointerup', ()=> Sound.windSet(0));
+  range.addEventListener('blur', ()=> Sound.windSet(0));
+  update();
+
+  /* tamanho */
+  const earth = document.getElementById('earthCircle');
+  const neptune = document.getElementById('neptuneCircle');
+  const btnSmall = document.getElementById('btnSmall');
+  const btnReal = document.getElementById('btnReal');
+  function setReal(){
+    earth.style.width = earth.style.height = '26px';
+    neptune.style.width = neptune.style.height = '150px';
+    btnReal.classList.add('active'); btnSmall.classList.remove('active');
+  }
+  function setEqual(){
+    earth.style.width = earth.style.height = '70px';
+    neptune.style.width = neptune.style.height = '70px';
+    btnSmall.classList.add('active'); btnReal.classList.remove('active');
+  }
+  btnReal.addEventListener('click', ()=>{ setReal(); Sound.sfx.pop();
+    Speech.speak('Esse é o tamanho de verdade! Netuno é quase quatro vezes maior que a Terra.'); });
+  btnSmall.addEventListener('click', ()=>{ setEqual(); Sound.sfx.pop(); });
+  setReal();
+
+  /* idade */
+  document.getElementById('ageBtns').addEventListener('click', e=>{
+    const b = e.target.closest('[data-age]'); if(!b) return;
+    document.querySelectorAll('#ageBtns .toggle-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const age = parseInt(b.dataset.age,10);
+    const netMonths = (age/165)*12;
+    document.getElementById('ageAnswer').textContent = 'Você teria 0 anos! 🎈';
+    const dias = Math.round(netMonths*30);
+    document.getElementById('ageSub').textContent =
+      `Com ${age} anos aqui, em Netuno você teria só uns ${dias} dias de vida — nem um mês netuniano!`;
+    Sound.sfx.ding();
+    Speech.speak(`Com ${age} anos aqui na Terra, em Netuno você teria zero anos! Nem um mês netuniano.`);
+  });
+
+  /* gravidade */
+  document.getElementById('gravBtns').addEventListener('click', e=>{
+    const b = e.target.closest('[data-obj]'); if(!b) return;
+    document.querySelectorAll('#gravBtns .toggle-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const kg = parseFloat(b.dataset.kg), obj = b.dataset.obj;
+    const net = kg*1.14;
+    const fmt = n => (n >= 100 ? Math.round(n).toLocaleString('pt-BR') : n.toFixed(1).replace('.',','));
+    document.getElementById('gravAnswer').textContent = `${fmt(kg)} kg ➜ ${fmt(net)} kg`;
+    document.getElementById('gravSub').textContent =
+      `Em Netuno, ${obj === 'melancia' ? 'uma melancia' : obj === 'mochila' ? 'uma mochila' : obj === 'cachorro' ? 'um cachorro' : 'um elefante'} pesaria quase igual! A gravidade de lá é só um pouquinho mais forte que a nossa.`;
+    Sound.sfx.ding();
+    Speech.speak(`Aqui pesa ${fmt(kg)} quilos. Em Netuno pesaria ${fmt(net)} quilos. Quase igual!`);
+  });
+})();
+
+/* =====================================================
+   JOGO: MONTE O SISTEMA SOLAR
+===================================================== */
+(function(){
+  const PLANETS = [
+    {n:'Mercúrio', c:'#9E8B7D', s:34},
+    {n:'Vênus',    c:'#D8A15C', s:42},
+    {n:'Terra',    c:'#2E86AB', s:44},
+    {n:'Marte',    c:'#C1440E', s:38},
+    {n:'Júpiter',  c:'#D9A066', s:60},
+    {n:'Saturno',  c:'#E3C77A', s:56},
+    {n:'Urano',    c:'#7FD1E8', s:48},
+    {n:'Netuno',   c:'#2E86AB', s:48},
+  ];
+  const slotsEl = document.getElementById('orbitSlots');
+  const trayEl = document.getElementById('chipTray');
+  const hintEl = document.getElementById('gameHint');
+  let step = 0, done = false;
+
+  function build(){
+    step = 0; done = false;
+    slotsEl.innerHTML = '<div class="sun-chip">☀️</div>' +
+      PLANETS.map((_,i)=>`<div class="slot" data-slot="${i}">${i+1}</div>`).join('');
+    const shuffled = PLANETS.map((p,i)=>({...p, idx:i})).sort(()=>Math.random()-.5);
+    trayEl.innerHTML = shuffled.map(p=>
+      `<button class="planet-chip" data-idx="${p.idx}" style="background:${p.c}; width:${p.s}px; height:${p.s}px;">${p.n}</button>`
+    ).join('');
+    hintEl.textContent = 'Toque no planeta mais pertinho do Sol!';
+  }
+
+  trayEl.addEventListener('click', e=>{
+    const chip = e.target.closest('.planet-chip'); if(!chip || done) return;
+    const idx = parseInt(chip.dataset.idx,10);
+    if(idx === step){
+      const slot = slotsEl.querySelector(`[data-slot="${step}"]`);
+      const p = PLANETS[step];
+      slot.className = 'slot filled';
+      slot.style.background = p.c;
+      slot.style.width = p.s+'px'; slot.style.height = p.s+'px';
+      slot.style.color = '#fff'; slot.style.fontSize = '.6rem';
+      slot.textContent = p.n;
+      chip.remove();
+      Sound.sfx.ding();
+      step++;
+      if(step === PLANETS.length){
+        done = true;
+        hintEl.textContent = '🎉 Você montou o Sistema Solar inteiro!';
+        Speech.speak('Isso mesmo! Você montou o Sistema Solar inteirinho. E o Netuno é o último de todos!');
+        confetti(120);
+        award('astronomo');
+      } else {
+        hintEl.textContent = `Muito bem! Agora o ${PLANETS[step].n}.`;
+        Speech.speak(`Muito bem! Agora o ${PLANETS[step].n}.`);
+      }
+    } else {
+      chip.classList.remove('shake'); void chip.offsetWidth; chip.classList.add('shake');
+      Sound.sfx.nope();
+      hintEl.textContent = `Quase! Tente o ${PLANETS[step].n}.`;
+      Speech.speak(`Quase! Tente o ${PLANETS[step].n}.`);
+    }
+  });
+
+  document.getElementById('gameReset').addEventListener('click', ()=>{ Sound.sfx.whoosh(); build(); });
+  build();
+})();
+
+/* =====================================================
+   QUIZ
+===================================================== */
+(function(){
+  const questions = [
+    {q:'Netuno é o planeta mais...', opts:['Quente','Distante do Sol','Pequeno de todos'], correct:1,
+     why:'Netuno é o oitavo planeta, o último e o mais longe do Sol.'},
+    {q:'Quantas luas Netuno tem?', opts:['1','16','100'], correct:1,
+     why:'São 16 luas conhecidas. A maior é Tritão.'},
+    {q:'Por que Netuno é azul?', opts:['Tem muita água','Tem um gás chamado metano','É pintado'], correct:1,
+     why:'O metano come a luz vermelha e sobra a luz azul.'},
+    {q:'O que é um meteoro?', opts:['Uma estrela pequena','Um risco de luz de uma pedrinha do espaço','Uma lua de Netuno'], correct:1,
+     why:'A pedrinha entra no nosso ar, esquenta e vira um risco de luz.'},
+    {q:'O que faz uma estrela brilhar?', opts:['Ela reflete a luz do Sol','Ela produz a própria luz','Ela pega luz da Lua'], correct:1,
+     why:'Estrela faz a própria luz. Planeta só reflete, igual um espelho.'}
+  ];
+  let current = 0, score = 0, answered = false;
+  const shell = document.getElementById('quizShell');
+
+  function render(){
+    if(current >= questions.length){ renderDone(); return; }
+    const item = questions[current];
+    answered = false;
+    shell.innerHTML = `
+      <div class="quiz-top">
+        <div class="quiz-progress">Pergunta ${current+1} de ${questions.length}</div>
+        <button class="listen listen-sm" id="quizListen">🔊 Ouvir</button>
+      </div>
+      <div class="quiz-q">${item.q}</div>
+      <div id="quizOpts"></div>
+      <div class="quiz-feedback" id="quizFeedback"></div>
+      <div class="quiz-nav"><button class="story-btn" id="quizNext" disabled>Próxima ▶</button></div>`;
+
+    const readQ = () => Speech.speak(item.q + '. ' + item.opts.join(', ou, '));
+    document.getElementById('quizListen').addEventListener('click', ()=>{ Sound.sfx.tap(); readQ(); });
+
+    const optsWrap = document.getElementById('quizOpts');
+    item.opts.forEach((opt,i)=>{
+      const b = document.createElement('button');
+      b.className = 'quiz-opt'; b.textContent = opt;
+      b.addEventListener('click', ()=>{
+        if(answered) return;
+        answered = true;
+        const fb = document.getElementById('quizFeedback');
+        const nextBtn = document.getElementById('quizNext');
+        if(i === item.correct){
+          b.classList.add('correct');
+          fb.textContent = '🎉 Isso mesmo! ' + item.why;
+          fb.style.color = '#1E5E3B';
+          score++;
+          Sound.sfx.ding();
+          Speech.speak('Isso mesmo! ' + item.why);
+          confetti(30);
+        } else {
+          b.classList.add('wrong');
+          optsWrap.children[item.correct].classList.add('correct');
+          fb.textContent = '💡 A certa era: ' + item.opts[item.correct] + '. ' + item.why;
+          fb.style.color = '#9C3A22';
+          Sound.sfx.nope();
+          Speech.speak('Quase! A certa era ' + item.opts[item.correct] + '. ' + item.why);
+        }
+        nextBtn.disabled = false;
+      });
+      optsWrap.appendChild(b);
+    });
+
+    document.getElementById('quizNext').addEventListener('click', ()=>{
+      Sound.sfx.tap(); current++; render();
+    });
+  }
+
+  function renderDone(){
+    shell.innerHTML = `
+      <div class="quiz-done">
+        <div class="big-emoji">🪐✨</div>
+        <h3>${State.name ? State.name + ', você' : 'Vocês'} acertou ${score} de ${questions.length}!</h3>
+        <p>Parabéns! Agora todo mundo já sabe um pouquinho mais sobre Netuno.</p>
+        <button class="story-btn" id="quizRestart">🔄 Jogar de novo</button>
+      </div>`;
+    confetti(110);
+    award('campeao');
+    Speech.speak(`Parabéns! Você acertou ${score} de ${questions.length} perguntas!`);
+    document.getElementById('quizRestart').addEventListener('click', ()=>{
+      Sound.sfx.whoosh(); current = 0; score = 0; render();
+    });
+  }
+  render();
+})();
+
+/* =====================================================
+   CERTIFICADO
+===================================================== */
+const certWrap = document.getElementById('certWrap');
+function renderCertificate(){
+  const earned = STICKERS.filter(s=>State.stickers[s.id]);
+  const all = earned.length === STICKERS.length;
+  if(!all){
+    certWrap.innerHTML = `
+      <div class="certificate cert-locked">
+        <div class="lock">🔒</div>
+        <div class="cert-title">Certificado bloqueado</div>
+        <p>Faltam <strong>${STICKERS.length - earned.length}</strong> adesivo(s) para liberar!</p>
+        <div class="cert-stickers">${STICKERS.map(s=>
+          `<span style="opacity:${State.stickers[s.id]?1:.25}">${s.emoji}</span>`).join('')}</div>
+        <p style="font-size:.85rem;color:var(--ink-soft)">Explore a história, as curiosidades, o colorido, o jogo e o quiz.</p>
+      </div>`;
+    return;
+  }
+  const hoje = new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'long', year:'numeric'});
+  certWrap.innerHTML = `
+    <div class="certificate">
+      <div class="cert-seal">🪐</div>
+      <div class="cert-title">Certificado de Astronauta</div>
+      <div class="cert-sub">Missão Netuno · Projeto Paideia · K5</div>
+      <div class="cert-name">${State.name || 'Astronauta'}</div>
+      <p class="cert-body">completou a missão até o planeta mais distante do Sistema Solar,
+      conheceu suas 16 luas, sentiu o vento mais rápido de todos e montou o Sistema Solar inteirinho.</p>
+      <div class="cert-stickers">${earned.map(s=>s.emoji).join(' ')}</div>
+      <div class="cert-foot">
+        <span>📅 ${hoje}</span>
+        <span>“Os céus proclamam a glória de Deus.” — Salmos 19:1</span>
+      </div>
+    </div>
+    <div class="cert-actions" style="text-align:center; margin-top:18px;">
+      <button class="btn-big" data-print="certificado">🖨️ Imprimir meu certificado</button>
+    </div>`;
+  certWrap.querySelector('[data-print]').addEventListener('click', ()=>{
+    document.body.dataset.print = 'certificado';
+    window.print();
+    setTimeout(()=>{ delete document.body.dataset.print; }, 800);
+  });
+}
+
+/* init */
+renderPassport();
+</script>
+</body>
+</html>
